@@ -7,6 +7,9 @@ import '../../services/message_service.dart';
 import '../../services/topic_service.dart';
 import '../../widgets/message_input.dart';
 import '../../services/block_service.dart';
+import '../../models/block.dart';
+import 'widgets/attachment_tile.dart';
+import '../../providers/streaming.dart';
 
 class ChatScreen extends ConsumerWidget {
   final String topicId;
@@ -24,11 +27,25 @@ class ChatScreen extends ConsumerWidget {
 
     final messages = ref.watch(messagesProvider(effectiveTopic));
     final cfg = ref.watch(providerSettingsProvider);
+    final streamingMap = ref.watch(streamingProvider);
+    final isStreaming = streamingMap.containsKey(effectiveTopic);
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
             if (cfg.apiKey.isEmpty)
+            if (isStreaming)
+              Material(
+                color: Colors.blueGrey.shade50,
+                child: ListTile(
+                  leading: const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                  title: const Text('正在生成…'),
+                  trailing: TextButton(
+                    onPressed: () => ref.read(streamingProvider.notifier).cancel(effectiveTopic),
+                    child: const Text('取消'),
+                  ),
+                ),
+              ),
               Material(
                 color: Colors.amber.shade100,
                 child: ListTile(
@@ -111,6 +128,21 @@ class ChatScreen extends ConsumerWidget {
                                 error: (e, _) => const SizedBox.shrink(),
                               );
                             }),
+                            Consumer(builder: (context, ref, _) {
+                              final atts = ref.watch(attachmentsProvider(m.id));
+                              return atts.when(
+                                data: (list) => Column(
+                                  crossAxisAlignment:
+                                      isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                  children: [
+                                    for (final b in list)
+                                      AttachmentTile(block: b),
+                                  ],
+                                ),
+                                loading: () => const SizedBox.shrink(),
+                                error: (e, _) => const SizedBox.shrink(),
+                              );
+                            }),
                           ],
                         ),
                       ),
@@ -121,12 +153,12 @@ class ChatScreen extends ConsumerWidget {
                 error: (e, _) => Center(child: Text('加载失败: $e')),
               ),
             ),
-            MessageInput(onSubmit: (text) async {
+            MessageInput(onSubmit: (text, attachments) async {
               final msgSvc = ref.read(messageServiceProvider);
               final topicSvc = ref.read(topicServiceProvider);
               // Ensure topic exists and set current if default route
               String tid = effectiveTopic;
-              await msgSvc.sendWithLlm(topicId: tid, text: text, ref: ref);
+              await msgSvc.sendWithLlm(topicId: tid, text: text, ref: ref, attachments: attachments);
               // refresh
               ref.invalidate(messagesProvider(tid));
             }),

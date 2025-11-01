@@ -17,6 +17,7 @@ import 'screens/settings/about/about_screen.dart';
 import 'screens/assistant/assistant_screen.dart';
 import 'screens/assistant/assistant_market_screen.dart';
 import 'screens/assistant/assistant_detail_screen.dart';
+import 'screens/mcp/mcp_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
@@ -70,10 +71,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/assistant/:assistantId',
             builder: (ctx, st) => AssistantDetailScreen(assistantId: st.pathParameters['assistantId']!),
           ),
-          GoRoute(
-            path: '/mcp',
-            builder: (ctx, st) => const Scaffold(body: Center(child: Text('MCP Placeholder'))),
-          ),
+          GoRoute(path: '/mcp', builder: (ctx, st) => const McpScreen()),
         ],
       ),
     ],

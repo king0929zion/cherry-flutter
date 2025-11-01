@@ -8,6 +8,8 @@ import '../utils/ids.dart';
 import 'llm_service.dart';
 import '../providers/provider_settings.dart';
 import 'block_service.dart';
+import '../providers/streaming.dart';
+import 'web_search_service.dart';
 
 class MessageService {
   Future<List<ChatMessage>> getMessagesByTopic(String topicId) async {
@@ -64,15 +66,40 @@ class MessageService {
     return createAssistantMessage(topicId: topicId, content: '回声：$prompt');
   }
 
-  Future<void> sendWithLlm({required String topicId, required String text, required WidgetRef ref}) async {
-    await createUserMessage(topicId: topicId, content: text);
+  Future<void> sendWithLlm({
+    required String topicId,
+    required String text,
+    required WidgetRef ref,
+    List<PickedAttachment> attachments = const [],
+  }) async {
+    final trimmed = text.trim();
+    if (trimmed.startsWith('/search ')) {
+      final q = trimmed.substring(8).trim();
+      final user = await createUserMessage(topicId: topicId, content: text);
+      final summary = await ref.read(webSearchServiceProvider).searchSummary(q);
+      await createAssistantMessage(topicId: topicId, content: '搜索结果：\n$summary');
+      return;
+    }
+
+    final user = await createUserMessage(topicId: topicId, content: text);
+    // persist attachments as blocks
+    for (final a in attachments) {
+      await ref.read(blockServiceProvider).addAttachmentBlock(
+            messageId: user.id,
+            name: a.name,
+            mime: a.mime,
+            bytes: a.bytes,
+          );
+    }
     final history = await getMessagesByTopic(topicId);
     final assistant = await createAssistantMessage(topicId: topicId, content: '');
     String buffer = '';
     final cfg = ref.read(providerSettingsProvider);
+    final token = ref.read(streamingProvider.notifier).start(topicId);
     await ref.read(llmServiceProvider).streamComplete(
       context: history,
       cfg: cfg,
+      cancelToken: token,
       onDelta: (d) async {
         buffer += d;
         final updated = ChatMessage(
@@ -87,6 +114,7 @@ class MessageService {
         });
       },
     );
+    ref.read(streamingProvider.notifier).stop(topicId);
   }
 
   Future<void> translateMessage({required String messageId, required String lang, required WidgetRef ref}) async {

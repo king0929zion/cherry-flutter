@@ -6,6 +6,11 @@ import 'package:http/http.dart' as http;
 import '../models/message.dart';
 import '../providers/provider_settings.dart';
 
+class CancelToken {
+  bool canceled = false;
+  void cancel() => canceled = true;
+}
+
 class LlmService {
   LlmService();
 
@@ -43,6 +48,7 @@ class LlmService {
     required List<ChatMessage> context,
     required ProviderSettings cfg,
     required void Function(String delta) onDelta,
+    CancelToken? cancelToken,
   }) async {
     if (cfg.apiKey.isEmpty) {
       throw StateError('请先在设置中配置 OpenAI API Key');
@@ -72,6 +78,7 @@ class LlmService {
       }
       final utf8Stream = streamed.stream.transform(utf8.decoder);
       await for (final chunk in utf8Stream) {
+        if (cancelToken?.canceled == true) break;
         for (final line in chunk.split('\n')) {
           final s = line.trim();
           if (s.isEmpty) continue;

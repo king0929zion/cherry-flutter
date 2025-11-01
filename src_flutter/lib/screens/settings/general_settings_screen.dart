@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/boxes.dart';
 import '../../providers/theme.dart';
+import '../../providers/locale.dart';
 
 class GeneralSettingsScreen extends ConsumerWidget {
   const GeneralSettingsScreen({super.key});
@@ -13,6 +14,7 @@ class GeneralSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeModeProvider);
+    final loc = ref.watch(localeProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('通用设置')),
       body: ListView(
@@ -21,6 +23,14 @@ class GeneralSettingsScreen extends ConsumerWidget {
             title: const Text('深色模式'),
             value: theme == ThemeMode.dark,
             onChanged: (v) => ref.read(themeModeProvider.notifier).set(v ? ThemeMode.dark : ThemeMode.light),
+          ),
+          ListTile(
+            title: const Text('语言'),
+            subtitle: Text(loc?.languageCode == 'en' ? 'English' : '中文'),
+            onTap: () async {
+              final next = loc?.languageCode == 'en' ? const Locale('zh') : const Locale('en');
+              ref.read(localeProvider.notifier).set(next);
+            },
           ),
           const Divider(),
           ListTile(
