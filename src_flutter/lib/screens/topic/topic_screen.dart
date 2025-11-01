@@ -4,6 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../services/topic_service.dart';
 import '../../widgets/topic_item.dart';
+import '../../widgets/loading_indicator.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/error_view.dart';
+import '../../widgets/animated_widgets.dart';
 
 /// TopicScreen - 主题列表页面
 /// 带搜索、分组显示
@@ -96,25 +100,18 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
           final grouped = _groupTopics(filtered);
 
           if (filtered.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.chat_bubble_outline,
-                    size: 64,
-                    color: theme.iconTheme.color?.withOpacity(0.3),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _searchText.isEmpty ? '暂无主题' : '未找到匹配的主题',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.textTheme.bodySmall?.color,
-                    ),
-                  ),
-                ],
-              ),
-            );
+            return _searchText.isEmpty
+                ? EmptyState(
+                    icon: Icons.chat_bubble_outline,
+                    title: '暂无主题',
+                    description: '点击右上角按钮创建新主题',
+                    actionLabel: '创建主题',
+                    onAction: () async {
+                      final t = await svc.createTopic();
+                      if (context.mounted) context.go('/home/chat/${t.id}');
+                    },
+                  )
+                : SearchEmptyState(query: _searchText);
           }
 
           return Column(
@@ -224,16 +221,11 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('加载失败: $e'),
-            ],
-          ),
+        loading: () => const LoadingIndicator(message: '加载中...'),
+        error: (e, _) => ErrorView(
+          message: '加载失败',
+          details: e.toString(),
+          onRetry: () => ref.invalidate(topicsProvider),
         ),
       ),
     );

@@ -5,6 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../services/assistant_service.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/emoji_avatar.dart';
+import '../../widgets/loading_indicator.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/error_view.dart';
+import '../../widgets/animated_widgets.dart';
 
 /// AssistantScreen - 助手列表页面
 /// 卡片网格布局，展示所有助手
@@ -33,33 +37,15 @@ class AssistantScreen extends ConsumerWidget {
       body: assistants.when(
         data: (list) {
           if (list.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.smart_toy_outlined,
-                    size: 64,
-                    color: Theme.of(context).iconTheme.color?.withOpacity(0.3),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '暂无助手', // TODO: i18n
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).textTheme.bodySmall?.color,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () async {
-                      await svc.createAssistant();
-                      ref.invalidate(assistantsProvider);
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('创建助手'),
-                  ),
-                ],
-              ),
+            return EmptyState(
+              icon: Icons.smart_toy_outlined,
+              title: '暂无助手',
+              description: '创建你的第一个 AI 助手',
+              actionLabel: '创建助手',
+              onAction: () async {
+                await svc.createAssistant();
+                ref.invalidate(assistantsProvider);
+              },
             );
           }
           
@@ -78,16 +64,11 @@ class AssistantScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('加载失败: $e'),
-            ],
-          ),
+        loading: () => const LoadingIndicator(message: '加载助手...'),
+        error: (e, _) => ErrorView(
+          message: '加载助手失败',
+          details: e.toString(),
+          onRetry: () => ref.invalidate(assistantsProvider),
         ),
       ),
     );
