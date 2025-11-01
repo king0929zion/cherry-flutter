@@ -137,6 +137,23 @@
 
 ## 最新更新记录
 
+### 2024-11-01 构建错误修复 ✅
+
+**🔧 修复的构建问题：**
+1. ✅ 移除 `package_info_plus` 依赖（不可用）
+2. ✅ 修复所有 `Tokens.textSecondary` 引用为 `Tokens.textSecondaryLight`
+3. ✅ AboutScreen 改为 StatelessWidget
+4. ✅ 使用硬编码版本号
+
+**受影响的文件（5个）：**
+- about_screen.dart
+- providers_settings_screen.dart
+- empty_state.dart
+- datasource_settings_screen.dart
+- websearch_settings_screen.dart
+
+**构建状态：** ✅ 所有错误已修复，应用可正常编译
+
 ### 2024-11-01 全面开发进行中 🚀
 
 **📦 已完成的核心模块：**
