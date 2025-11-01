@@ -32,31 +32,32 @@ class ChatScreen extends ConsumerWidget {
     final cfg = ref.watch(providerSettingsProvider);
     final streamingMap = ref.watch(streamingProvider);
     final isStreaming = streamingMap.containsKey(effectiveTopic);
+    
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            if (cfg.apiKey.isEmpty)
-              Material(
-                color: Colors.amber.shade100,
-                child: const ListTile(
-                  leading: Icon(Icons.info_outline),
-                  title: Text('请先在 设置 -> 供应商 设置 OpenAI API Key 才能调用模型'),
+      appBar: ChatHeader(topicId: effectiveTopic),
+      body: Column(
+        children: [
+          if (cfg.apiKey.isEmpty)
+            Material(
+              color: Colors.amber.shade100,
+              child: const ListTile(
+                leading: Icon(Icons.info_outline),
+                title: Text('请先在 设置 -> 供应商 设置 OpenAI API Key 才能调用模型'),
+              ),
+            ),
+          if (isStreaming)
+            Material(
+              color: Colors.blueGrey.shade50,
+              child: ListTile(
+                leading: const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                title: const Text('正在生成…'),
+                trailing: TextButton(
+                  onPressed: () => ref.read(streamingProvider.notifier).cancel(effectiveTopic),
+                  child: const Text('取消'),
                 ),
               ),
-            if (isStreaming)
-              Material(
-                color: Colors.blueGrey.shade50,
-                child: ListTile(
-                  leading: const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-                  title: const Text('正在生成…'),
-                  trailing: TextButton(
-                    onPressed: () => ref.read(streamingProvider.notifier).cancel(effectiveTopic),
-                    child: const Text('取消'),
-                  ),
-                ),
-              ),
-            Expanded(
+            ),
+          Expanded(
               child: messages.when(
                 data: (list) => ListView.builder(
                   padding: const EdgeInsets.all(12),
@@ -210,8 +211,7 @@ class ChatScreen extends ConsumerWidget {
               // refresh
               ref.invalidate(messagesProvider(tid));
             }),
-          ],
-        ),
+        ],
       ),
     );
   }
