@@ -1,4 +1,4 @@
-name: Flutter CI
+name: Flutter Android CI
 
 on:
   push:
@@ -6,53 +6,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-web:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Enable platforms
-        run: |
-          flutter config --enable-web
-          flutter config --enable-android
-
-      - name: Generate Flutter project if missing
-        run: |
-          if [ ! -f "pubspec.yaml" ]; then
-            flutter create . --platforms=android,web --project-name cherry_flutter
-          fi
-
-      - name: Inject application sources
-        shell: bash
-        run: |
-          if [ -d "src_flutter/lib" ]; then
-            rm -rf lib
-            mkdir -p lib
-            cp -a src_flutter/lib/. lib/
-          fi
-
-      - name: Install dependencies
-        run: |
-          flutter pub add go_router flutter_riverpod shared_preferences uuid hive hive_flutter path_provider http flutter_markdown url_launcher collection file_picker
-          flutter pub add flutter_localizations --sdk=flutter
-          flutter pub get
-
-      - name: Build Web
-        run: flutter build web --release
-
-      - name: Upload Web artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-build
-          path: build/web
-
   build-android:
     runs-on: ubuntu-latest
     steps:

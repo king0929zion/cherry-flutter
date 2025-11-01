@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod/riverpod.dart';
 
 import '../services/prefs_service.dart';
 
@@ -10,14 +9,16 @@ class WebSearchSettings {
   WebSearchSettings copyWith({String? endpoint}) => WebSearchSettings(endpoint: endpoint ?? this.endpoint);
 }
 
-class WebSearchSettingsNotifier extends StateNotifier<WebSearchSettings> {
-  WebSearchSettingsNotifier() : super(const WebSearchSettings()) {
-    load();
+class WebSearchSettingsNotifier extends Notifier<WebSearchSettings> {
+  @override
+  WebSearchSettings build() {
+    _load();
+    return const WebSearchSettings();
   }
 
   static const _kEndpoint = 'websearch.endpoint';
 
-  Future<void> load() async {
+  Future<void> _load() async {
     state = WebSearchSettings(endpoint: prefsService.getString(_kEndpoint) ?? state.endpoint);
   }
 
@@ -27,6 +28,6 @@ class WebSearchSettingsNotifier extends StateNotifier<WebSearchSettings> {
   }
 }
 
-final webSearchSettingsProvider = StateNotifierProvider<WebSearchSettingsNotifier, WebSearchSettings>((ref) {
-  return WebSearchSettingsNotifier();
-});
+final webSearchSettingsProvider = NotifierProvider<WebSearchSettingsNotifier, WebSearchSettings>(
+  WebSearchSettingsNotifier.new,
+);

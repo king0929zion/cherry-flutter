@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod/riverpod.dart';
 
 import '../services/llm_service.dart';
 
-class StreamingState extends StateNotifier<Map<String, CancelToken?>> {
-  StreamingState() : super(<String, CancelToken?>{});
+class StreamingState extends Notifier<Map<String, CancelToken?>> {
+  @override
+  Map<String, CancelToken?> build() => <String, CancelToken?>{};
 
   CancelToken start(String topicId) {
     final token = CancelToken();
@@ -27,6 +27,4 @@ class StreamingState extends StateNotifier<Map<String, CancelToken?>> {
   bool isStreaming(String topicId) => state.containsKey(topicId);
 }
 
-final streamingProvider = StateNotifierProvider<StreamingState, Map<String, CancelToken?>>((ref) {
-  return StreamingState();
-});
+final streamingProvider = NotifierProvider<StreamingState, Map<String, CancelToken?>>(StreamingState.new);

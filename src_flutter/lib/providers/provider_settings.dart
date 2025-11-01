@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod/riverpod.dart';
 
 import '../services/prefs_service.dart';
 
@@ -33,9 +32,11 @@ class ProviderSettings {
       );
 }
 
-class ProviderSettingsNotifier extends StateNotifier<ProviderSettings> {
-  ProviderSettingsNotifier() : super(const ProviderSettings()) {
-    load();
+class ProviderSettingsNotifier extends Notifier<ProviderSettings> {
+  @override
+  ProviderSettings build() {
+    _load();
+    return const ProviderSettings();
   }
 
   static const _kApiKey = 'provider.apiKey';
@@ -44,7 +45,7 @@ class ProviderSettingsNotifier extends StateNotifier<ProviderSettings> {
   static const _kProviderId = 'provider.id';
   static const _kTemp = 'provider.temperature';
 
-  Future<void> load() async {
+  Future<void> _load() async {
     state = ProviderSettings(
       providerId: prefsService.getString(_kProviderId) ?? 'openai',
       apiKey: prefsService.getString(_kApiKey) ?? '',
@@ -64,6 +65,5 @@ class ProviderSettingsNotifier extends StateNotifier<ProviderSettings> {
   }
 }
 
-final providerSettingsProvider = StateNotifierProvider<ProviderSettingsNotifier, ProviderSettings>((ref) {
-  return ProviderSettingsNotifier();
-});
+final providerSettingsProvider = NotifierProvider<ProviderSettingsNotifier, ProviderSettings>(
+    ProviderSettingsNotifier.new);

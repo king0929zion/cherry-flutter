@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod/riverpod.dart';
 import 'dart:convert';
 
 import '../services/prefs_service.dart';
@@ -18,14 +17,16 @@ class McpServer {
       );
 }
 
-class McpSettingsNotifier extends StateNotifier<List<McpServer>> {
-  McpSettingsNotifier() : super(const []) {
-    load();
+class McpSettingsNotifier extends Notifier<List<McpServer>> {
+  @override
+  List<McpServer> build() {
+    _load();
+    return const [];
   }
 
   static const _kKey = 'mcp.servers';
 
-  Future<void> load() async {
+  Future<void> _load() async {
     final list = (prefsService.getString(_kKey) ?? '[]');
     try {
       final data = (list.isEmpty ? [] : (jsonDecode(list) as List)).cast<dynamic>();
@@ -51,6 +52,4 @@ class McpSettingsNotifier extends StateNotifier<List<McpServer>> {
   }
 }
 
-final mcpSettingsProvider = StateNotifierProvider<McpSettingsNotifier, List<McpServer>>((ref) {
-  return McpSettingsNotifier();
-});
+final mcpSettingsProvider = NotifierProvider<McpSettingsNotifier, List<McpServer>>(McpSettingsNotifier.new);
