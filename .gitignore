@@ -1,0 +1,14 @@
+build/
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+ios/
+android/
+.idea/
+.vscode/
+pubspec.lock
+coverage/
+**/.DS_Store
+**/Thumbs.db
