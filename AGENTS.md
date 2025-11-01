@@ -1,394 +1,56 @@
-# Cherry Flutter 复刻计划（AGENTS 文档）
+# Cherry Flutter 复刻计划（AGENTS）
 
-## 目标与范围
+## 🎯 项目目标
 
-- 目标：用 Flutter 完全复刻 `G:\Cherry-Studio\cherry-studio-app` 的 UI 与交互逻辑，达到“像素级一致”的外观与行为（颜色、间距、圆角、尺寸、字体、图标、动画、手势、状态反馈等全部一致）。
-- 范围：
-  - 导航与路由（抽屉/分组栈/欢迎页/设置子页等）
-  - 聊天（消息列表、Markdown 渲染、流式输出、取消、重新生成、长按操作、翻译、附件图片/文件块）
-  - 主题与配色（明暗模式、主题 Token 对齐）
-  - 助手（列表、详情、市场占位）、模型/供应商设置
-  - Web 搜索与工具调用（命令式“/search …”已提供基础能力）
-  - MCP 服务器管理（占位与配置管理）
-  - 数据层与备份导入（Hive JSON 导入导出）
-  - 构建与发布（GitHub Actions：每次推送自动构建 Android APK）
+- 使用 Flutter 完整复刻 Cherry Studio 的移动端 UI 与交互，做到“像素级一致”。
+- 所有颜色、间距、圆角、字体、动效、手势与状态反馈与原项目保持一致；如遇技术限制需在文档中注明。
+- 只针对 Android 平台，构建与交付通过 GitHub Actions 自动化完成。
 
-## 当前完成进度（截至最新提交）
+## ✅ 当前完成进度
 
-- 工程与 CI
-  - 完成 Flutter 工程骨架与 GitHub Actions，仅构建 Android APK（web 构建已移除）。
-  - 依赖：riverpod v3、go_router、hive、http、flutter_markdown、file_picker、flutter_localizations 等。
-  - 新增项目文档：README.md（完整的项目说明、架构介绍、使用指南）。
+- **架构与工程**
+  - Flutter 工程 + GitHub Actions 全自动构建（Android APK）。
+  - 文档体系完善：《README.md》《AGENTS.md》实时更新。
+  - 依赖：riverpod v3、go_router、hive、http、flutter_markdown、file_picker 等。
+- **核心功能**
+  - 导航结构：Welcome / Drawer / ShellRoute / 页面子路由。
+  - 聊天体验：流式输出、Markdown 渲染、长按动作、附件处理、翻译块。
+  - 主题管理：搜索、时间分组、卡片化展示、重命名 / 删除、当前主题高亮。
+  - 助手体系：列表、详情、角色绑定、助手市场（网格卡片 + BottomSheet + 导入流程）。
+  - 供应商 & 模型：卡片化设置、温度滑块、快捷操作、连接测试。
+  - 通用设置：主题模式、语言切换、数据导出/导入、危险操作提示。
+  - MCP 管理：服务增删、持久化（交互暂为基础形态）。
+  - 国际化：中英双语切换。
+- **主题 & UI**
+  - 完整迁移 Tailwind Token 至 `tokens.dart`，支持明暗模式。
+  - AppShell、ChatHeader、MessageBubble、MessageInput 均与原版匹配。
+  - 助手市场、设置模块、主题列表等页面实现卡片化布局与动效。
 
-- 核心功能
-  - 导航结构（Welcome/Drawer：Home/Assistant/MCP；Home 栈含 Chat/Topic/Settings 及子路由）。
-  - 聊天：
-    - LLM 流式输出（OpenAI chat/completions SSE），支持取消；生成完成后智能命名主题。
-    - Markdown 渲染，长按消息：翻译/复制/重新生成/删除。
-    - 附件：图片/文件选择与预览（块存储）。
-    - 翻译块：中/英互译并在消息下方渲染。
-  - 设置：
-    - 供应商设置（Base URL/Model/API Key/Temperature）。
-    - 通用设置（明暗模式、语言切换、中英、本地 JSON 备份/导入）。
-    - 网页搜索设置（可配置 endpoint 模板）。
-  - MCP：服务器管理页（增删与持久化，协议集成留待后续）。
-  - i18n：基础中/英切换（Flutter 本地化管线）。
+## 📌 待办与路线图
 
-- UI/主题（✅ 像素级还原完成）
-  - **主题 Token 系统**（✅ 完成）：
-    - 完整移植 Tailwind 配置中的所有颜色定义到 `lib/theme/tokens.dart`
-    - 包含所有颜色变体：purple、orange、blue、pink、red、gray、yellow、green（含明暗模式）
-    - 特殊颜色：textDelete、textLink、borderColor、背景色系列、边框色等
-    - 主题配置文件 `app_theme.dart` 包含完整的组件样式定义
-  
-  - **AppDrawer 侧边栏**（✅ 完成）：
-    - 完全复刻原项目布局：菜单项分组、近期主题列表、底部用户信息
-    - 精确间距：px-2.5、gap-1.5、gap-2.5 等完全对齐
-    - 新组件：MenuTabContent、TopicItem（含头像、时间格式化、长按菜单）
-    - 分割线位置和样式完全一致
-  
-  - **ChatHeader 聊天头部**（✅ 完成）：
-    - 三栏布局：左侧菜单按钮 + 中间助手选择器 + 右侧新建主题按钮
-    - 高度 44px（h-11），内边距 px-3.5
-    - 中间区域：两行文本（助手名称 + 主题名称），可点击展开助手选择器
-    - 底部边框分隔线
-  
-  - **MessageBubble 消息气泡**（✅ 完成）：
-    - 用户消息：右对齐，绿色背景（green-10 + border green-20），左圆+右上圆+右下小圆
-    - 助手消息：左对齐，透明背景，完全圆角（rounded-2xl）
-    - 完整 Markdown 样式：代码块、引用块、表格、链接等
-    - 代码块带背景色和边框，行高 1.6
-  
-  - **MessageInput 输入框**（✅ 完成）：
-    - 外层容器：顶部圆角（16px），带向上阴影（offset 0, -4）
-    - 三层结构：文件预览 + 文本输入 + 工具栏
-    - 文本框：最小高度 96px，最大 200px，透明边框
-    - 工具栏：左侧按钮组（附件、思考、提及、MCP）+ 右侧发送/暂停按钮
-    - 发送/暂停按钮带动画切换（200ms scale + fade）
-  - **AssistantMarket 助手市场**（✅ 完成）：
-    - 市场卡片全面复刻（模糊 Emoji 背景、标签展示、卡片阴影）
-    - 详情 BottomSheet（导入/聊天操作、系统提示词展示）
-    - 内置助手数据本地化并支持关键字搜索过滤
-  - **Settings 设置模块**（✅ 完成）：
-    - 供应商设置、通用设置、数据管理卡片化布局
-    - 温度滑块、快捷操作、导入导出提示对齐原版交互
+1. **像素级 UI 收尾**
+   - 模型选择器 + 模型管理面板。
+   - 工具调用工作流与结果回显 UI。
+   - 剩余页面（如关于、MCP 详情）的动效和细节微调。
+2. **交互与功能**
+   - 助手市场的推荐/搜索排序优化，分页体验。
+   - 流式消息的错误处理与断点续传。
+   - 供应商配置的高级校验 & 错误提示。
+3. **工程 & 体验**
+   - 国际化文案全覆盖（含错误提示）。
+   - App 图标 / 启动页资源（对齐原版）。
+   - 更细粒度的性能优化（长列表、图片缓存等）。
 
-    - 底部安全区适配
+## ⚠️ 风险与注意事项
 
-## 待办与路线图（UI 像素级还原优先）
+- 涉及 API Key 等敏感信息均只保存在本地 Hive，不可提交仓库。
+- 因平台差异导致的无法复刻项需在 PR/文档中说明。
+- 任何 UI 改动必须与原版对齐后再合并。
 
-1) 像素级 UI 还原
-   - 模型选择器与模型管理界面
-   - 工具调用入口与结果回显统一样式
-   - 主题列表与长列表的性能打磨
+## 🆕 最新更新记录
 
-2) 功能与交互
-   - 助手市场的推荐/搜索排序优化与分页体验
-   - 模型选择与供应商配置的联动（含错误提示与空状态）
-   - 工具调用链路及结果回显视图
-   - 流式消息的断点续传与错误处理
-   - 可访问性提升（语义、对比度、触控反馈）
-
-3) 工程
-   - App 图标/启动图与原项目一致（导入 `src/assets/images` 中的素材并生成 Android 资源）
-   - 发布签名/渠道包（后续接入 keystore 与 Play 规范，当前为 unsigned APK artifact）
-
-## UI 还原规范（必须遵守）
-
-- 不得私自改动色值、圆角、阴影、间距、字体、字号、图标尺寸与样式；若 Flutter 平台限制导致差异，必须在备注中注明并给出最接近实现。
-- 组件间距、列表项高度、按钮大小与布局需与原项目保持一致（以原项目样式为准）。
-- 动画与转场（滑动、淡入出、BottomSheet 展开）尽量贴近原体验；若需自定义曲线与时长，优先匹配原项目配置。
-
-## 技术架构概览
-
-- 路由：`go_router`（匹配原项目栈/抽屉结构）。
-- 状态：`flutter_riverpod` v3（Notifier/NotifierProvider）。
-- 数据：Hive（topics/messages/blocks/prefs），剪贴板 JSON 备份/导入。
-- LLM：OpenAI Chat Completions（流式 SSE，HTTP 请求），可通过“供应商设置”修改 base/model/key/温度。
-- UI：Material3，自定义 Token 对齐原 Tailwind 配置；`flutter_markdown` 渲染。
-- 附件：`file_picker` 选择，Base64 存储在块中；图片使用 `Image.memory` 预览。
-- CI/CD：GitHub Actions（Android APK，每次 push 自动构建并上传 artifact）。
-
-## 构建与使用
-
-- GitHub Actions
-  - 仅 Android Job：自动安装 Flutter/Android SDK → 创建工程（若缺失）→ 注入 `src_flutter/lib` → `flutter pub get` → `flutter build apk --release` → 上传 `app-release.apk`。
-- 运行前配置
-  - 在应用内“设置 → 供应商”填入 OpenAI API Key/模型/URL 才能使用聊天。
-  - `/search <关键词>` 可触发 DuckDuckGo 摘要搜索（可在“网页搜索设置”替换 endpoint 模板）。
-
-## 注意事项与要求（来自用户的强约束）
-
-- “UI 是最重要的”，必须 1:1 还原原项目视觉与交互；包括每个组件的样子、颜色、图标、边距与高度。
-- 不得向仓库提交任何密钥与敏感信息（API Key、token、keystore 等）。
-- 仅构建 Android APK（已在 CI 中生效）；如需恢复 Web 构建，请单独明确提出。
-- 对于因平台差异导致无法完全一致的细节，需要在合并说明/提交消息中记录差异与替代方案。
-
-## 已知风险/限制
-
-- 平台差异：React Native + Tailwind 到 Flutter 的视觉与排版可能存在细微差异，需要不断微调 Token 与组件样式以达像素级一致。
-- 第三方接口：LLM / Web 搜索 无法保证可用性与速率，需处理网络错误与限流。
-- 附件存储：当前以 Hive + Base64 为主，超大文件会增大占用；后续可考虑文件系统持久化与缩略图方案。
-
-## 贡献与提交约定
-
-- 分支：功能分支开发，合并主干前自测通过（运行 + 构建）。
-- 提交信息：聚焦“为什么 + 行为变化”，标明 UI 差异或平台限制（如有）。
-- CI：推送即触发 Android 构建，请避免无意义的频繁推送。
-
----
-
-## 最新更新记录
-
-### 2025-11-02 助手市场 UI 同步 ✅
-
-- 完成助手市场网格卡片、搜索与详情 BottomSheet 的 Flutter 复刻。
+### 2025-11-02 助手市场与设置 UI 升级 ✅
+- 完成助手市场网格卡片、搜索、详情 BottomSheet 的 Flutter 复刻。
 - 引入内置助手数据资产（中/英）并接入导入与聊天流程。
-- 更新 GitHub Actions，自动复制 assets 并声明 `assets/data` 目录。
-- 供应商、通用、数据管理设置页面升级为卡片化布局，补齐快捷操作与安全提示。
-
-### 2025-11-01 导航架构与助手设置更新 ✅
-
-- 引入 AppShell 抽屉骨架，统一管理主页 Drawer 并避免嵌套 Scaffold 冲突。
-- Chat 与 Topic 页面接入 AppShell 扩展，菜单按钮可正确打开侧边栏。
-- 助手设置页升级，支持默认 / 快速 / 翻译助手角色绑定与管理。
-- 新增助手角色分配 provider，并补全内置助手种子与本地持久化。
-
-### 2024-11-01 构建错误修复 ✅
-
-**🔧 修复的构建问题：**
-1. ✅ 移除 `package_info_plus` 依赖（不可用）
-2. ✅ 修复所有 `Tokens.textSecondary` 引用为 `Tokens.textSecondaryLight`
-3. ✅ AboutScreen 改为 StatelessWidget
-4. ✅ 使用硬编码版本号
-
-**受影响的文件（5个）：**
-- about_screen.dart
-- providers_settings_screen.dart
-- empty_state.dart
-- datasource_settings_screen.dart
-- websearch_settings_screen.dart
-
-**构建状态：** ✅ 所有错误已修复，应用可正常编译
-
-### 2024-11-01 全面开发进行中 🚀
-
-**📦 已完成的核心模块：**
-
-1. **UI 组件库** (25+ 组件) ✅
-   - **消息相关**: MessageBubble, MessageInput, ChatHeader
-   - **导航相关**: AppDrawer, TopicItem, MenuTabContent
-   - **设置相关**: SettingsGroup, SettingsItem, SettingsSectionTitle, SettingsSwitchItem
-   - **头像相关**: EmojiAvatar
-   - **附件相关**: ImageBlock, FileBlock, AttachmentPreview
-   - **状态相关**: LoadingIndicator, InlineLoadingIndicator, EmptyState, ListEmptyState, SearchEmptyState
-   - **错误相关**: ErrorView, InlineErrorView, NetworkErrorView
-   - **对话框**: ConfirmationDialog, DeleteConfirmationDialog
-   - **动画**: FadeInWidget, SlideInWidget, ScaleInWidget, AnimatedListItem
-
-2. **页面模块** (12+ 页面) ✅
-   - ChatScreen (消息列表 + 输入 + 加载/错误状态)
-   - TopicScreen (主题列表 + 搜索 + 分组 + 空状态)
-   - AssistantScreen (助手网格 + 卡片 + 空状态)
-   - AssistantDetailScreen (编辑 + Emoji选择器)
-   - SettingsScreen (设置主页)
-   - GeneralSettingsScreen (通用设置 + 主题/语言/数据)
-   - ProvidersSettingsScreen (供应商完整配置)
-   - WebSearchSettingsScreen (搜索引擎选择)
-   - DataSourceSettingsScreen (数据备份恢复)
-   - AboutScreen (关于 + 链接)
-
-3. **核心功能** ✅
-   - **消息功能**: 长按菜单 (复制/翻译/重新生成/删除)
-   - **数据管理**: 导入导出、清除数据、备份恢复
-   - **主题系统**: 系统/浅色/深色 三模式
-   - **语言系统**: 中文/English 切换
-   - **媒体功能**: 图片预览 + 文件显示
-   - **交互优化**: Emoji 选择器、确认对话框
-   - **状态管理**: 加载、空状态、错误处理
-   - **动画效果**: 淡入、滑入、缩放动画
-
-4. **工具类** ✅
-   - Formatters (时间/文件大小/数字格式化)
-   - 各种实用函数
-
-**✅ 完成的开发任务：**
-- WebSearch 设置页面 ✅
-- DataSource 数据管理页面 ✅
-- 所有页面的状态优化 ✅
-- 统一的加载/错误/空状态组件 ✅
-- 动画系统 ✅
-- 确认对话框系统 ✅
-
-### 2024-11-01 像素级还原完成
-
-**🎨 像素级还原细节：**
-
-**1. 通用设置页面** ✅
-- 主题选择对话框：跟随系统/浅色/深色
-- 语言选择对话框：🇨🇳 中文 / 🇺🇸 English
-- 数据导入确认对话框
-- 使用 SettingsGroup 组件统一样式
-
-**2. 关于页面** ✅
-- Logo: 70x70px，圆角 41px
-- 标题: 22px bold
-- 描述: 14px，使用 textSecondary 颜色
-- 版本标签: 
-  - 背景: green-10/green-dark-10
-  - 边框: green-20/green-dark-20 (1px)
-  - 文字: green-100/green-dark-100
-  - 圆角: 25.37px
-  - 内边距: px-2 py-0.5
-- 链接项:
-  - 图标: 20px
-  - 间距: gap-[10px]
-  - 外部链接图标: 16px arrow_outward
-  - 分割线缩进: 46px (精确计算)
-- 所有间距完全对齐原项目
-
-**像素级对齐示例：**
-```dart
-// Logo 圆角精确到小数
-borderRadius: BorderRadius.circular(41)
-
-// 间距精确值
-gap-[5px]  // 5px
-gap-4      // 16px
-gap-6      // 24px
-
-// 颜色使用 Tokens
-color: isDark ? Tokens.greenDark10 : Tokens.green10
-border: isDark ? Tokens.greenDark20 : Tokens.green20
-text: isDark ? Tokens.greenDark100 : Tokens.green100
-```
-
-**最新改进：**
-- ✅ ChatScreen 添加 ChatHeader 组件
-- ✅ 改进布局结构，使用标准 Scaffold
-- ✅ 代码重构，更好的关注点分离
-- ✅ 所有颜色使用 Tokens 严格对齐
-- ✅ 所有图标尺寸精确匹配
-- ✅ 所有间距像素级还原
-
-### 2024-11-01 第四轮代码重构 + Bug修复
-
-本次更新修复关键 bug 并重构 ChatScreen：
-
-**🔧 Bug 修复**
-- ✅ 修复 `Assistant` 模型缺少 `emoji` 字段导致的构建失败
-- ✅ 添加 `description`, `tags`, `group` 字段严格对齐原项目
-- ✅ 更新 `copyWith`, `toJson`, `fromJson` 方法支持新字段
-- ✅ 创建新助手时自动设置默认 emoji 🤖
-
-**♻️ ChatScreen 重构**
-- 使用 `MessageBubble` 组件替代自定义渲染
-- 翻译块样式优化：绿色边框，更好的布局
-- 附件显示对齐优化：根据用户/助手角色对齐
-- 代码结构更清晰，遵循原项目风格
-
-**提交记录**
-- `a97bcda` - fix: Add emoji and other fields to Assistant model
-- `7199e84` - docs: update bug fix record
-- `4a6fa74` - refactor: Use MessageBubble component in ChatScreen
-
-### 2024-11-01 第三轮功能完善 + Bug修复
-
-本次更新完成了所有核心功能并修复构建错误：
-
-**🔧 Bug 修复（更新）**
-- 修复构建错误：`CardTheme` -> `CardThemeData`
-- 修复构建错误：`DialogTheme` -> `DialogThemeData`
-- 修复 Assistant 模型缺少字段：添加 `emoji`, `description`, `tags`, `group`
-- 严格对齐原项目的 Assistant 类型定义
-- 所有代码通过编译测试
-
-**1. 消息长按菜单** ✅
-- 支持长按消息显示操作菜单
-- 菜单项：复制、翻译、重新生成（仅助手消息）、删除
-- BottomSheet 样式菜单
-- 回调函数接口完整
-
-**2. 图片预览和文件块** ✅
-- `ImageBlock` 组件：Base64 图片显示
-- 支持点击全屏预览（InteractiveViewer 缩放）
-- `FileBlock` 组件：文件信息卡片
-- 自动识别文件类型图标（PDF、DOC、XLS、ZIP 等）
-- 文件大小自动格式化（B/KB/MB）
-- 支持删除按钮
-
-**3. 助手详情页面** ✅
-- 完整的编辑界面：Emoji、名称、系统提示词
-- Emoji 选择器：30+ 常用 Emoji，网格布局
-- 卡片式布局，使用 `SettingsGroup` 组件
-- 保存状态提示（加载中、成功、失败）
-- 输入验证（名称不能为空）
-
-**新增组件**
-- `attachment_preview.dart`: `ImageBlock` + `FileBlock`
-
-### 2024-11-01 第二轮 UI 优化完成
-
-本次更新完成了设置、助手、主题列表页面的优化：
-
-**1. 设置页面重构** (`SettingsGroup` 组件)
-- 统一的卡片样式：圆角、阴影、分组
-- `SettingsItem`: 设置项组件（图标、标题、副标题、箭头）
-- `SettingsSectionTitle`: 分组标题
-- `SettingsSwitchItem`: 带开关的设置项
-- 完全对齐原项目布局和间距
-
-**2. 助手列表页面** (`EmojiAvatar` 组件)
-- 网格布局（2列），卡片展示
-- `EmojiAvatar`: Emoji 头像组件（可配置大小、圆角、边框）
-- 助手卡片：头像、名称、描述、标签
-- 空状态提示和错误处理
-
-**3. 主题列表页面**
-- 搜索功能：实时过滤主题
-- 时间分组：今天、昨天、本周、上周、上月、更早
-- 使用 `TopicItem` 组件展示
-- 删除确认对话框
-
-**4. 新增组件**
-- `SettingsGroup`: 设置分组容器
-- `SettingsItem`: 设置项
-- `SettingsSectionTitle`: 分组标题
-- `EmojiAvatar`: Emoji 头像
-  
-### 2024-11-01 第一轮 UI 像素级还原完成
-
-**1. 主题系统完善**
-- 补全所有 Tailwind 颜色定义（88 个颜色 Token）
-- 完整的明暗模式支持
-- 统一的组件样式配置（按钮、卡片、输入框、对话框等）
-
-**2. 核心组件重构**
-- `AppDrawer`: 完全复刻侧边栏布局，包括菜单项、主题列表、用户信息
-- `ChatHeader`: 三栏布局，助手选择器，精确间距
-- `MessageBubble`: 用户/助手消息气泡，完整 Markdown 样式
-- `MessageInput`: 工具栏、发送/暂停动画、文件预览
-
-**3. 新增组件**
-- `MenuTabContent`: 菜单标签内容组件
-- `TopicItem`: 主题列表项（含头像、时间、长按菜单）
-
-**4. 项目文档**
-- 新增 `README.md`: 完整的项目说明、技术架构、使用指南
-- 更新 `AGENTS.md`: 详细记录开发进度和规范
-
-**待完成工作**：
-- ✅ 消息长按菜单（翻译、复制、重新生成、删除）
-- ✅ 图片预览和文件块显示
-- ✅ 助手详情页面 UI
-- ⏳ App 图标与启动图
-- ⏳ MCP 服务器集成
-- ⏳ 更多动画效果优化
-
----
-
-如需继续开发，优先级建议：
-1) 完成设置页面的卡片样式与布局统一
-2) 助手市场/详情页面 UI 复刻
-3) 主题列表页面的分组与时间显示优化
-4) 导入正式图标与启动图
+- 供应商 / 通用 / 数据管理页面升级为卡片化布局，加入温度滑块、快捷操作与安全提示。
+- 更新 GitHub Actions 自动复制 `src_flutter/assets` 并注入 `pubspec.yaml`，保证构建一致性。
