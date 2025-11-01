@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import '../models/attachment.dart';
 
-class PickedAttachment {
-  final String name;
-  final String mime;
-  final List<int> bytes;
-  PickedAttachment({required this.name, required this.mime, required this.bytes});
+String _guessMime(String name) {
+  final lower = name.toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.gif')) return 'image/gif';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.txt')) return 'text/plain';
+  if (lower.endsWith('.pdf')) return 'application/pdf';
+  return 'application/octet-stream';
 }
 
 class MessageInput extends StatefulWidget {
@@ -39,7 +44,7 @@ class _MessageInputState extends State<MessageInput> {
     if (res == null) return;
     for (final f in res.files) {
       if (f.bytes == null) continue;
-      _attachments.add(PickedAttachment(name: f.name, mime: f.mimeType ?? 'application/octet-stream', bytes: f.bytes!));
+      _attachments.add(PickedAttachment(name: f.name, mime: _guessMime(f.name), bytes: f.bytes!));
     }
     if (mounted) setState(() {});
   }

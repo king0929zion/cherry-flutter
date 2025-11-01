@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/riverpod.dart';
 
 import '../services/llm_service.dart';
 
 class StreamingState extends StateNotifier<Map<String, CancelToken?>> {
-  StreamingState() : super({});
+  StreamingState() : super(<String, CancelToken?>{});
 
   CancelToken start(String topicId) {
     final token = CancelToken();
@@ -12,7 +13,7 @@ class StreamingState extends StateNotifier<Map<String, CancelToken?>> {
   }
 
   void stop(String topicId) {
-    final next = {...state};
+    final next = Map<String, CancelToken?>.from(state);
     next.remove(topicId);
     state = next;
   }

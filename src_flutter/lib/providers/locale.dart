@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/riverpod.dart';
 
 class LocaleNotifier extends StateNotifier<Locale?> {
   LocaleNotifier() : super(const Locale('zh'));

@@ -10,6 +10,8 @@ import '../providers/provider_settings.dart';
 import 'block_service.dart';
 import '../providers/streaming.dart';
 import 'web_search_service.dart';
+import '../models/attachment.dart';
+import 'topic_service.dart';
 
 class MessageService {
   Future<List<ChatMessage>> getMessagesByTopic(String topicId) async {
