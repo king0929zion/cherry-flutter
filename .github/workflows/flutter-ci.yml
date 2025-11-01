@@ -25,7 +25,7 @@ jobs:
       - name: Generate Flutter project if missing
         run: |
           if [ ! -f "pubspec.yaml" ]; then
-            flutter create . --platforms=web
+            flutter create . --platforms=web --project-name cherry_flutter
           fi
 
       - name: Inject application sources
@@ -39,7 +39,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          flutter pub add go_router flutter_riverpod shared_preferences
+          flutter pub add go_router flutter_riverpod shared_preferences uuid
           flutter pub get
 
       - name: Build Web
