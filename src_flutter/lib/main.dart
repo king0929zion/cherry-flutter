@@ -7,6 +7,7 @@ import 'providers/theme.dart';
 import 'app_router.dart';
 import 'data/boxes.dart';
 import 'providers/locale.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,10 +24,12 @@ class CherryApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     final router = ref.watch(appRouterProvider);
     final locale = ref.watch(localeProvider);
+    final theme = buildAppTheme(Brightness.light);
+    final darkTheme = buildAppTheme(Brightness.dark);
     return MaterialApp.router(
       title: 'Cherry Flutter',
-      theme: ThemeData(useMaterial3: true, brightness: Brightness.light),
-      darkTheme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
+      theme: theme,
+      darkTheme: darkTheme,
       themeMode: themeMode,
       locale: locale,
       supportedLocales: const [Locale('en'), Locale('zh')],
