@@ -38,7 +38,7 @@ class EmptyState extends StatelessWidget {
               size: iconSize,
               color: (isDark 
                 ? Tokens.textSecondaryDark 
-                : Tokens.textSecondary).withOpacity(0.5),
+                : Tokens.textSecondaryLight).withOpacity(0.5),
             ),
             const SizedBox(height: 16),
             Text(
@@ -55,7 +55,7 @@ class EmptyState extends StatelessWidget {
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: isDark 
                     ? Tokens.textSecondaryDark 
-                    : Tokens.textSecondary,
+                    : Tokens.textSecondaryLight,
                 ),
                 textAlign: TextAlign.center,
               ),

@@ -254,7 +254,7 @@ class DataSourceSettingsScreen extends StatelessWidget {
               '• 建议定期备份重要数据\n'
               '• 导入操作会覆盖当前所有数据',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondary,
+                color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
                 height: 1.6,
               ),
             ),

@@ -213,7 +213,7 @@ class _ProvidersSettingsScreenState extends ConsumerState<ProvidersSettingsScree
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: isDark 
                           ? Tokens.textSecondaryDark 
-                          : Tokens.textSecondary,
+                          : Tokens.textSecondaryLight,
                       ),
                     ),
                   ],

@@ -90,7 +90,7 @@ class _WebSearchSettingsScreenState extends State<WebSearchSettingsScreen> {
             child: Text(
               '网页搜索功能可以让 AI 助手在需要时自动搜索互联网上的信息，提供更准确和及时的回答。',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondary,
+                color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
                 height: 1.5,
               ),
             ),

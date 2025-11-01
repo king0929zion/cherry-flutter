@@ -1,36 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../theme/tokens.dart';
 import '../../../widgets/settings_group.dart';
 
 /// AboutScreen - 关于页面
 /// 像素级还原原项目UI和布局
-class AboutScreen extends StatefulWidget {
+class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
-  @override
-  State<AboutScreen> createState() => _AboutScreenState();
-}
-
-class _AboutScreenState extends State<AboutScreen> {
-  String _version = 'latest';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadVersion();
-  }
-
-  Future<void> _loadVersion() async {
-    try {
-      final info = await PackageInfo.fromPlatform();
-      setState(() => _version = info.version);
-    } catch (e) {
-      // 保持默认版本
-    }
-  }
+  // 版本号 - 可以从 pubspec.yaml 读取或硬编码
+  static const String _version = '1.0.0';
 
   Future<void> _openUrl(String url) async {
     final uri = Uri.parse(url);
@@ -108,7 +88,7 @@ class _AboutScreenState extends State<AboutScreen> {
                               fontSize: 14,
                               color: isDark 
                                 ? Tokens.textSecondaryDark 
-                                : Tokens.textSecondary,
+                                : Tokens.textSecondaryLight,
                             ),
                           ),
                           
