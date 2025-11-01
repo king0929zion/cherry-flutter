@@ -7,6 +7,7 @@ import '../models/message.dart';
 import '../utils/ids.dart';
 import 'llm_service.dart';
 import '../providers/provider_settings.dart';
+import 'block_service.dart';
 
 class MessageService {
   Future<List<ChatMessage>> getMessagesByTopic(String topicId) async {
@@ -86,6 +87,30 @@ class MessageService {
         });
       },
     );
+  }
+
+  Future<void> translateMessage({required String messageId, required String lang, required WidgetRef ref}) async {
+    // find message
+    Map? raw;
+    for (final key in Boxes.messages.keys) {
+      final m = Boxes.messages.get(key) as Map?;
+      if (m != null) {
+        final data = Map<String, dynamic>.from(m['data'] as Map);
+        if (data['id'] == messageId) {
+          raw = m;
+          break;
+        }
+      }
+    }
+    if (raw == null) return;
+    final msg = ChatMessage.fromJson(Map<String, dynamic>.from(raw['data'] as Map));
+    final cfg = ref.read(providerSettingsProvider);
+    final prompt = '请将以下内容翻译为$lang：\n\n${msg.content}';
+    final reply = await ref.read(llmServiceProvider).complete(context: [
+      ChatMessage(id: newId(), role: 'system', content: '你是一个专业的翻译助手。', createdAt: DateTime.now()),
+      ChatMessage(id: newId(), role: 'user', content: prompt, createdAt: DateTime.now()),
+    ], cfg: cfg);
+    await ref.read(blockServiceProvider).upsertTranslation(messageId: messageId, text: reply);
   }
 }
 

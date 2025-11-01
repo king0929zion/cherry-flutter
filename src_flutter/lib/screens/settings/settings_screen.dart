@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:go_router/go_router.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -15,6 +16,8 @@ class SettingsScreen extends StatelessWidget {
           ListTile(title: const Text('数据源设置'), onTap: () => context.go('/settings/data-sources')),
           ListTile(title: const Text('网页搜索设置'), onTap: () => context.go('/settings/web-search')),
           ListTile(title: const Text('关于'), onTap: () => context.go('/settings/about')),
+          const Divider(),
+          ListTile(title: const Text('数据备份/导入'), onTap: () => context.go('/settings/general?backup=1')),
         ],
       ),
     );

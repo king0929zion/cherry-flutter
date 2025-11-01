@@ -6,6 +6,7 @@ import '../../providers/provider_settings.dart';
 import '../../services/message_service.dart';
 import '../../services/topic_service.dart';
 import '../../widgets/message_input.dart';
+import '../../services/block_service.dart';
 
 class ChatScreen extends ConsumerWidget {
   final String topicId;
@@ -45,16 +46,72 @@ class ChatScreen extends ConsumerWidget {
                     final isUser = m.role == 'user';
                     return Align(
                       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: isUser ? Colors.blue.shade600 : Colors.grey.shade800,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          m.content,
-                          style: const TextStyle(color: Colors.white),
+                      child: GestureDetector(
+                        onLongPress: () async {
+                          final action = await showModalBottomSheet<String>(
+                            context: context,
+                            builder: (_) => SafeArea(
+                              child: Wrap(children: [
+                                ListTile(
+                                  leading: const Icon(Icons.translate),
+                                  title: const Text('翻译为中文'),
+                                  onTap: () => Navigator.pop(context, 'zh'),
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.translate),
+                                  title: const Text('Translate to English'),
+                                  onTap: () => Navigator.pop(context, 'en'),
+                                ),
+                              ]),
+                            ),
+                          );
+                          if (action != null) {
+                            await ref.read(messageServiceProvider).translateMessage(
+                                  messageId: m.id,
+                                  lang: action == 'zh' ? '中文' : 'English',
+                                  ref: ref,
+                                );
+                            ref.invalidate(translationBlockProvider(m.id));
+                          }
+                        },
+                        child: Column(
+                          crossAxisAlignment:
+                              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.symmetric(vertical: 6),
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isUser
+                                    ? Colors.blue.shade600
+                                    : Colors.grey.shade800,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                m.content,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            Consumer(builder: (context, ref, _) {
+                              final trans = ref.watch(translationBlockProvider(m.id));
+                              return trans.when(
+                                data: (b) => b == null
+                                    ? const SizedBox.shrink()
+                                    : Container(
+                                        margin: const EdgeInsets.only(bottom: 6),
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.shade800,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(b.content,
+                                            style: const TextStyle(color: Colors.white70)),
+                                      ),
+                                loading: () => const SizedBox.shrink(),
+                                error: (e, _) => const SizedBox.shrink(),
+                              );
+                            }),
+                          ],
                         ),
                       ),
                     );
