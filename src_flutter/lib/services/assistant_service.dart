@@ -39,7 +39,10 @@ class AssistantService {
 
   Future<Assistant?> getAssistant(String id) async {
     final list = await getAssistants();
-    return list.where((e) => e.id == id).cast<Assistant?>().firstOrNull;
+    for (final a in list) {
+      if (a.id == id) return a;
+    }
+    return null;
   }
 }
 

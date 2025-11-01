@@ -6,6 +6,7 @@ import '../data/boxes.dart';
 import '../models/message.dart';
 import '../utils/ids.dart';
 import 'llm_service.dart';
+import '../providers/provider_settings.dart';
 
 class MessageService {
   Future<List<ChatMessage>> getMessagesByTopic(String topicId) async {
@@ -62,13 +63,15 @@ class MessageService {
     return createAssistantMessage(topicId: topicId, content: '回声：$prompt');
   }
 
-  Future<void> sendWithLlm({required String topicId, required String text, required Ref ref}) async {
+  Future<void> sendWithLlm({required String topicId, required String text, required WidgetRef ref}) async {
     await createUserMessage(topicId: topicId, content: text);
     final history = await getMessagesByTopic(topicId);
     final assistant = await createAssistantMessage(topicId: topicId, content: '');
     String buffer = '';
+    final cfg = ref.read(providerSettingsProvider);
     await ref.read(llmServiceProvider).streamComplete(
       context: history,
+      cfg: cfg,
       onDelta: (d) async {
         buffer += d;
         final updated = ChatMessage(

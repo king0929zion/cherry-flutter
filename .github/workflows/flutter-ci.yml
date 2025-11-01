@@ -21,11 +21,12 @@ jobs:
       - name: Enable platforms
         run: |
           flutter config --enable-web
+          flutter config --enable-android
 
       - name: Generate Flutter project if missing
         run: |
           if [ ! -f "pubspec.yaml" ]; then
-            flutter create . --platforms=web --project-name cherry_flutter
+            flutter create . --platforms=android,web --project-name cherry_flutter
           fi
 
       - name: Inject application sources
@@ -50,3 +51,60 @@ jobs:
         with:
           name: web-build
           path: build/web
+
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Enable platforms
+        run: |
+          flutter config --enable-android
+
+      - name: Generate Flutter project if missing
+        run: |
+          if [ ! -f "pubspec.yaml" ]; then
+            flutter create . --platforms=android --project-name cherry_flutter
+          fi
+
+      - name: Inject application sources
+        shell: bash
+        run: |
+          if [ -d "src_flutter/lib" ]; then
+            rm -rf lib
+            mkdir -p lib
+            cp -a src_flutter/lib/. lib/
+          fi
+
+      - name: Install dependencies
+        run: |
+          flutter pub add go_router flutter_riverpod shared_preferences uuid hive hive_flutter path_provider http flutter_markdown url_launcher collection
+          flutter pub get
+
+      - name: Build Android APK (release, unsigned)
+        run: flutter build apk --release
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

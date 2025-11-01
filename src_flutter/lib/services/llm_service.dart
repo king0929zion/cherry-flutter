@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -8,11 +7,9 @@ import '../models/message.dart';
 import '../providers/provider_settings.dart';
 
 class LlmService {
-  final ProviderRef ref;
-  LlmService(this.ref);
+  LlmService();
 
-  Future<String> complete({required List<ChatMessage> context}) async {
-    final cfg = ref.read(providerSettingsProvider);
+  Future<String> complete({required List<ChatMessage> context, required ProviderSettings cfg}) async {
     if (cfg.apiKey.isEmpty) {
       throw StateError('请先在设置中配置 OpenAI API Key');
     }
@@ -44,9 +41,9 @@ class LlmService {
 
   Future<void> streamComplete({
     required List<ChatMessage> context,
+    required ProviderSettings cfg,
     required void Function(String delta) onDelta,
   }) async {
-    final cfg = ref.read(providerSettingsProvider);
     if (cfg.apiKey.isEmpty) {
       throw StateError('请先在设置中配置 OpenAI API Key');
     }
@@ -61,8 +58,8 @@ class LlmService {
 
     final request = http.Request('POST', uri)
       ..headers.addAll({
-        HttpHeaders.contentTypeHeader: 'application/json',
-        HttpHeaders.authorizationHeader: 'Bearer ${cfg.apiKey}',
+        'content-type': 'application/json',
+        'authorization': 'Bearer ${cfg.apiKey}',
       })
       ..body = reqBody;
 
@@ -100,4 +97,4 @@ class LlmService {
   }
 }
 
-final llmServiceProvider = Provider<LlmService>((ref) => LlmService(ref));
+final llmServiceProvider = Provider<LlmService>((ref) => LlmService());
