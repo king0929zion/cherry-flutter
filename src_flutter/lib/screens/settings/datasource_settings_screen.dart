@@ -1,190 +1,22 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import '../../data/boxes.dart';
-import '../../widgets/settings_group.dart';
 import '../../theme/tokens.dart';
 
-/// DataSourceSettingsScreen - 数据源设置页面
-/// 数据备份和恢复
-class DataSourceSettingsScreen extends StatelessWidget {
+class DataSourceSettingsScreen extends StatefulWidget {
   const DataSourceSettingsScreen({super.key});
 
-  Future<void> _exportData(BuildContext context) async {
-    try {
-      final dump = {
-        'topics': Boxes.topics.toMap(),
-        'messages': Boxes.messages.toMap(),
-        'blocks': Boxes.blocks.toMap(),
-        'prefs': Boxes.prefs.toMap(),
-        'timestamp': DateTime.now().toIso8601String(),
-      };
-      
-      await Clipboard.setData(ClipboardData(text: jsonEncode(dump)));
-      
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('数据已导出到剪贴板'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('导出失败: $e')),
-        );
-      }
-    }
-  }
+  @override
+  State<DataSourceSettingsScreen> createState() => _DataSourceSettingsScreenState();
+}
 
-  Future<void> _importData(BuildContext context) async {
-    // 确认对话框
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('确认导入'),
-        content: const Text(
-          '导入数据将完全覆盖当前所有数据，包括：\n'
-          '• 所有对话主题\n'
-          '• 所有消息记录\n'
-          '• 所有设置项\n\n'
-          '此操作不可撤销，确定要继续吗？',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            child: const Text('确定导入'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true || !context.mounted) return;
-
-    try {
-      final data = await Clipboard.getData('text/plain');
-      if (data?.text == null) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('剪贴板为空，请先导出数据')),
-          );
-        }
-        return;
-      }
-
-      final map = jsonDecode(data!.text!) as Map<String, dynamic>;
-      
-      // 清空现有数据
-      await Boxes.topics.clear();
-      await Boxes.messages.clear();
-      await Boxes.blocks.clear();
-      await Boxes.prefs.clear();
-      
-      // 导入新数据
-      if (map['topics'] != null) {
-        final topics = Map<String, dynamic>.from(map['topics'] as Map);
-        for (final e in topics.entries) {
-          await Boxes.topics.put(e.key, Map<String, dynamic>.from(e.value as Map));
-        }
-      }
-      
-      if (map['messages'] != null) {
-        final messages = Map<String, dynamic>.from(map['messages'] as Map);
-        for (final e in messages.entries) {
-          await Boxes.messages.put(e.key, Map<String, dynamic>.from(e.value as Map));
-        }
-      }
-      
-      if (map['blocks'] != null) {
-        final blocks = Map<String, dynamic>.from(map['blocks'] as Map);
-        for (final e in blocks.entries) {
-          await Boxes.blocks.put(e.key, Map<String, dynamic>.from(e.value as Map));
-        }
-      }
-      
-      if (map['prefs'] != null) {
-        final prefs = Map<String, dynamic>.from(map['prefs'] as Map);
-        for (final e in prefs.entries) {
-          await Boxes.prefs.put(e.key, e.value);
-        }
-      }
-      
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('导入成功！请重启应用以查看更新'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('导入失败: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _clearAllData(BuildContext context) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('⚠️ 危险操作'),
-        content: const Text(
-          '即将删除所有数据，包括：\n'
-          '• 所有对话主题和消息\n'
-          '• 所有助手配置\n'
-          '• 所有设置项\n\n'
-          '此操作不可撤销！确定要继续吗？',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            child: const Text('确定删除'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true || !context.mounted) return;
-
-    try {
-      await Boxes.topics.clear();
-      await Boxes.messages.clear();
-      await Boxes.blocks.clear();
-      await Boxes.prefs.clear();
-      
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('所有数据已清除')),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('清除失败: $e')),
-        );
-      }
-    }
-  }
+class _DataSourceSettingsScreenState extends State<DataSourceSettingsScreen> {
+  bool _isExporting = false;
+  bool _isImporting = false;
+  bool _isClearing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -193,74 +25,324 @@ class DataSourceSettingsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('数据管理'), // TODO: i18n
+        title: const Text('数据管理'),
         centerTitle: false,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
-          // 数据备份
-          const SettingsSectionTitle(title: '数据备份'),
-          const SizedBox(height: 8),
-          SettingsGroup(
-            children: [
-              SettingsItem(
-                leading: const Icon(Icons.cloud_upload_outlined, size: 24),
-                title: '导出数据',
-                subtitle: '导出所有数据到剪贴板',
-                onTap: () => _exportData(context),
-              ),
-              Divider(
-                height: 1,
-                thickness: 1,
-                indent: 52,
-                color: theme.dividerColor,
-              ),
-              SettingsItem(
-                leading: const Icon(Icons.cloud_download_outlined, size: 24),
-                title: '导入数据',
-                subtitle: '从剪贴板导入数据（覆盖）',
-                onTap: () => _importData(context),
-              ),
-            ],
+          _SectionHeader(
+            title: '备份与迁移',
+            subtitle: '将数据导出为 JSON，或导入到新的设备。',
+            icon: Icons.backup_outlined,
           ),
-
-          const SizedBox(height: 24),
-
-          // 危险操作
-          const SettingsSectionTitle(title: '危险操作'),
-          const SizedBox(height: 8),
-          SettingsGroup(
-            children: [
-              SettingsItem(
-                leading: const Icon(Icons.delete_forever, size: 24, color: Colors.red),
-                title: '清除所有数据',
-                subtitle: '删除所有对话、消息和设置',
-                onTap: () => _clearAllData(context),
-                trailing: const Icon(Icons.warning, color: Colors.red, size: 20),
+          const SizedBox(height: 14),
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '导出数据',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '将所有对话、助手、设置导出为 JSON。可粘贴到文本文件或云端备份。',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: _isExporting ? null : () => _exportData(context),
+                    icon: _isExporting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.copy_outlined, size: 18),
+                    label: const Text('复制 JSON 到剪贴板'),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    '导入数据',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '从剪贴板读取 JSON 并覆盖当前数据。请确认内容可信并符合格式。',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _isImporting ? null : () => _importData(context),
+                    icon: _isImporting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.file_download_outlined, size: 18),
+                    label: const Text('从剪贴板导入'),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-
-          const SizedBox(height: 24),
-
-          // 说明
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              '提示：\n'
-              '• 导出的数据包含所有对话、消息和设置\n'
-              '• 可以在不同设备间迁移数据\n'
-              '• 建议定期备份重要数据\n'
-              '• 导入操作会覆盖当前所有数据',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
-                height: 1.6,
+          const SizedBox(height: 28),
+          _SectionHeader(
+            title: '危险操作',
+            subtitle: '慎用：此处操作会永久删除当前设备上的数据。',
+            icon: Icons.warning_amber_outlined,
+            color: Colors.redAccent,
+          ),
+          const SizedBox(height: 14),
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '清除所有数据',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.redAccent,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '包含对话、消息、助手配置、模型设置等所有本地数据。操作不可恢复。',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: _isClearing ? null : () => _clearAll(context),
+                    icon: _isClearing
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.delete_forever_outlined, size: 18),
+                    label: const Text('清空全部数据'),
+                  ),
+                ],
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _exportData(BuildContext context) async {
+    setState(() => _isExporting = true);
+    try {
+      final dump = {
+        'topics': Boxes.topics.toMap(),
+        'messages': Boxes.messages.toMap(),
+        'blocks': Boxes.blocks.toMap(),
+        'prefs': Boxes.prefs.toMap(),
+      };
+      await Clipboard.setData(ClipboardData(text: jsonEncode(dump)));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('数据已复制到剪贴板')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('导出失败: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  Future<void> _importData(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('确认导入数据'),
+        content: const Text('导入将覆盖当前所有数据，且无法撤销。是否继续？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('继续导入')),
+        ],
+      ),
+    );
+
+    if (confirm != true || mounted == false) return;
+    setState(() => _isImporting = true);
+
+    try {
+      final data = await Clipboard.getData('text/plain');
+      if (data?.text == null || data!.text!.trim().isEmpty) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('剪贴板为空，无法导入')));
+        return;
+      }
+
+      final map = jsonDecode(data.text!) as Map<String, dynamic>;
+      await Boxes.topics.clear();
+      await Boxes.messages.clear();
+      await Boxes.blocks.clear();
+      await Boxes.prefs.clear();
+
+      if (map['topics'] is Map) {
+        final topics = Map<String, dynamic>.from(map['topics'] as Map);
+        for (final entry in topics.entries) {
+          await Boxes.topics.put(entry.key, Map<String, dynamic>.from(entry.value as Map));
+        }
+      }
+      if (map['messages'] is Map) {
+        final messages = Map<String, dynamic>.from(map['messages'] as Map);
+        for (final entry in messages.entries) {
+          await Boxes.messages.put(entry.key, Map<String, dynamic>.from(entry.value as Map));
+        }
+      }
+      if (map['blocks'] is Map) {
+        final blocks = Map<String, dynamic>.from(map['blocks'] as Map);
+        for (final entry in blocks.entries) {
+          await Boxes.blocks.put(entry.key, Map<String, dynamic>.from(entry.value as Map));
+        }
+      }
+      if (map['prefs'] is Map) {
+        final prefs = Map<String, dynamic>.from(map['prefs'] as Map);
+        for (final entry in prefs.entries) {
+          await Boxes.prefs.put(entry.key, entry.value);
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('导入成功，请重启应用')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('导入失败: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
+  }
+
+  Future<void> _clearAll(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('危险操作提示'),
+        content: const Text('这将删除所有对话、助手及设置数据，操作不可恢复。是否继续？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('确定删除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || mounted == false) return;
+    setState(() => _isClearing = true);
+
+    try {
+      await Boxes.topics.clear();
+      await Boxes.messages.clear();
+      await Boxes.blocks.clear();
+      await Boxes.prefs.clear();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('所有数据已清除')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('清除失败: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isClearing = false);
+    }
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color? color;
+
+  const _SectionHeader({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final tint = color ?? theme.colorScheme.primary;
+
+    return Row(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            color: tint.withOpacity(isDark ? 0.18 : 0.12),
+          ),
+          child: Icon(icon, color: tint),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: isDark
+                      ? Tokens.textSecondaryDark
+                      : Tokens.textSecondaryLight,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

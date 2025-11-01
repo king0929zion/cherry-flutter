@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'providers/app_state.dart';
-import 'widgets/app_drawer.dart';
+import 'widgets/app_shell.dart';
 import 'screens/welcome/welcome_screen.dart';
 import 'screens/home/chat_screen.dart';
 import 'screens/topic/topic_screen.dart';
@@ -11,8 +11,8 @@ import 'screens/settings/settings_screen.dart';
 import 'screens/settings/general_settings_screen.dart';
 import 'screens/settings/assistant_settings_screen.dart';
 import 'screens/settings/providers_settings_screen.dart';
-import 'screens/settings/data_sources_settings_screen.dart';
-import 'screens/settings/web_search_settings_screen.dart';
+import 'screens/settings/datasource_settings_screen.dart';
+import 'screens/settings/websearch_settings_screen.dart';
 import 'screens/settings/about/about_screen.dart';
 import 'screens/assistant/assistant_screen.dart';
 import 'screens/assistant/assistant_market_screen.dart';
@@ -41,11 +41,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/welcome', builder: (ctx, st) => const WelcomeScreen()),
       ShellRoute(
         builder: (context, state, child) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Cherry Flutter')),
-            drawer: const AppDrawer(),
-            body: child,
-          );
+          return AppShell(child: child);
         },
         routes: [
           GoRoute(
@@ -60,7 +56,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(path: 'general', builder: (ctx, st) => const GeneralSettingsScreen()),
               GoRoute(path: 'assistant', builder: (ctx, st) => const AssistantSettingsScreen()),
               GoRoute(path: 'providers', builder: (ctx, st) => const ProvidersSettingsScreen()),
-              GoRoute(path: 'data-sources', builder: (ctx, st) => const DataSourcesSettingsScreen()),
+              GoRoute(path: 'data-sources', builder: (ctx, st) => const DataSourceSettingsScreen()),
               GoRoute(path: 'web-search', builder: (ctx, st) => const WebSearchSettingsScreen()),
               GoRoute(path: 'about', builder: (ctx, st) => const AboutScreen()),
             ],

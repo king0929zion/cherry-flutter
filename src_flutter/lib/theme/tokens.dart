@@ -16,6 +16,7 @@ class Tokens {
   static const orange10 = Color(0x1AFFB26E);
   static const orangeDark100 = Color(0xFFFFC27F);
   static const orangeDark20 = Color(0x33FFC27F);
+  static const orangeDark10 = Color(0x1AFFC27F);
   
   // Blue
   static const blue100 = Color(0xFF6FB1FA);
@@ -62,6 +63,8 @@ class Tokens {
   
   // Border colors
   static const borderColor = Color(0x1A000000); // rgba(0, 0, 0, 0.1)
+  static const borderLight = Color(0x19000000);
+  static const borderDark = Color(0x19FFFFFF);
   
   // Theme-aware background colors
   static const bgPrimaryLight = Color(0xFFF7F7F7);

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../data/boxes.dart';
 import '../../../services/topic_service.dart';
 import '../../../theme/tokens.dart';
+import '../../../widgets/app_shell.dart';
 
 /// ChatHeader - 聊天页面头部
 /// 完全复刻原项目的布局:
@@ -44,7 +45,12 @@ class ChatHeader extends ConsumerWidget implements PreferredSizeWidget {
               icon: const Icon(Icons.menu, size: 24),
               padding: EdgeInsets.zero,
               onPressed: () {
-                Scaffold.of(context).openDrawer();
+                final shell = context.appShell;
+                if (shell != null) {
+                  shell.openDrawer();
+                } else {
+                  Scaffold.maybeOf(context)?.openDrawer();
+                }
               },
             ),
           ),

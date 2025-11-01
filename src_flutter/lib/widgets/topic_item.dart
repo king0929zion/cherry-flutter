@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
 
-/// TopicItem - 主题列表项组件
-/// 显示助手头像、名称、主题名、更新时间
 class TopicItem extends StatelessWidget {
   final String topicId;
   final String topicName;
@@ -34,12 +32,15 @@ class TopicItem extends StatelessWidget {
     final diff = now.difference(date);
 
     if (diff.inDays == 0) {
-      // 今天 - 显示时间
       final hour = date.hour.toString().padLeft(2, '0');
       final minute = date.minute.toString().padLeft(2, '0');
       return '$hour:$minute';
+    } else if (diff.inDays == 1) {
+      return '昨天';
+    } else if (diff.inDays < 7) {
+      const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+      return weekdays[date.weekday % 7];
     } else {
-      // 其他 - 显示日期
       final month = date.month.toString().padLeft(2, '0');
       final day = date.day.toString().padLeft(2, '0');
       return '$month/$day';
@@ -50,42 +51,65 @@ class TopicItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final backgroundColor = isActive
-        ? (isDark ? Tokens.greenDark10 : Tokens.green10)
-        : Colors.transparent;
+    final background = isActive
+        ? (isDark ? Tokens.greenDark20 : Tokens.green10)
+        : (isDark ? const Color(0xFF18181C) : Colors.white);
 
     return InkWell(
+      borderRadius: BorderRadius.circular(18),
       onTap: onTap,
-      onLongPress: onDelete != null || onRename != null
+      onLongPress: (onDelete != null || onRename != null)
           ? () => _showContextMenu(context)
           : null,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(8),
+          color: background,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isActive
+                ? (isDark ? Tokens.greenDark100 : Tokens.green100)
+                : (isDark
+                    ? Colors.white.withOpacity(0.06)
+                    : Colors.black.withOpacity(0.05)),
+            width: isActive ? 1.4 : 1,
+          ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: (isDark ? Tokens.greenDark100 : Tokens.green100)
+                        .withOpacity(0.25),
+                    blurRadius: 18,
+                    offset: const Offset(0, 12),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 助手头像
             _buildAvatar(isDark),
-            const SizedBox(width: 6),
-            // 内容区域
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 助手名称 + 时间
                   Row(
                     children: [
                       Expanded(
                         child: Text(
-                          assistantName,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                          topicName.isEmpty ? '未命名会话' : topicName,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -95,20 +119,35 @@ class TopicItem extends StatelessWidget {
                       Text(
                         _formatTime(updatedAt),
                         style: theme.textTheme.bodySmall?.copyWith(
-                          fontSize: 11,
+                          color: isDark
+                              ? Tokens.textSecondaryDark
+                              : Tokens.textSecondaryLight,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  // 主题名称
-                  Text(
-                    topicName,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontSize: 13,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.smart_toy_outlined,
+                          size: 14,
+                          color: isDark
+                              ? Tokens.textSecondaryDark
+                              : Tokens.textSecondaryLight),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          assistantName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: isDark
+                                ? Tokens.textSecondaryDark
+                                : Tokens.textSecondaryLight,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -121,21 +160,26 @@ class TopicItem extends StatelessWidget {
 
   Widget _buildAvatar(bool isDark) {
     return Container(
-      width: 42,
-      height: 42,
+      width: 50,
+      height: 50,
       decoration: BoxDecoration(
-        color: Tokens.brand.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [const Color(0xFF1F2A28), const Color(0xFF16211F)]
+              : [const Color(0xFFE6F4EC), const Color(0xFFFFFFFF)],
+        ),
         border: Border.all(
-          color: isDark ? const Color(0xFF444444) : Colors.white,
+          color: isDark ? const Color(0xFF2F3A38) : Colors.white,
           width: 3,
         ),
       ),
-      child: Center(
-        child: Text(
-          assistantEmoji ?? '🤖',
-          style: const TextStyle(fontSize: 20),
-        ),
+      alignment: Alignment.center,
+      child: Text(
+        assistantEmoji ?? '🤖',
+        style: const TextStyle(fontSize: 24),
       ),
     );
   }
@@ -149,7 +193,7 @@ class TopicItem extends StatelessWidget {
           children: [
             if (onRename != null)
               ListTile(
-                leading: const Icon(Icons.edit),
+                leading: const Icon(Icons.edit_outlined),
                 title: const Text('重命名'),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -158,8 +202,9 @@ class TopicItem extends StatelessWidget {
               ),
             if (onDelete != null)
               ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('删除', style: TextStyle(color: Colors.red)),
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title:
+                    const Text('删除会话', style: TextStyle(color: Colors.red)),
                 onTap: () {
                   Navigator.pop(ctx);
                   onDelete?.call();

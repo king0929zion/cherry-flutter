@@ -48,6 +48,20 @@ jobs:
             mkdir -p lib
             cp -a src_flutter/lib/. lib/
           fi
+          if [ -d "src_flutter/assets" ]; then
+            rm -rf assets
+            mkdir -p assets
+            cp -a src_flutter/assets/. assets/
+          fi
+
+      - name: Configure project assets
+        shell: bash
+        run: |
+          if [ -d "assets/data" ]; then
+            if ! grep -q "assets/data/assistants-zh.json" pubspec.yaml; then
+              perl -0pi -e 's#flutter:\n  uses-material-design: true#flutter:\n  uses-material-design: true\n  assets:\n    - assets/data/assistants-zh.json\n    - assets/data/assistants-en.json#' pubspec.yaml
+            fi
+          fi
 
       - name: Install dependencies
         run: |
