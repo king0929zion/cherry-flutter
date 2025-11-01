@@ -137,6 +137,27 @@
 
 ## 最新更新记录
 
+### 2024-11-01 第四轮代码重构 + Bug修复
+
+本次更新修复关键 bug 并重构 ChatScreen：
+
+**🔧 Bug 修复**
+- ✅ 修复 `Assistant` 模型缺少 `emoji` 字段导致的构建失败
+- ✅ 添加 `description`, `tags`, `group` 字段严格对齐原项目
+- ✅ 更新 `copyWith`, `toJson`, `fromJson` 方法支持新字段
+- ✅ 创建新助手时自动设置默认 emoji 🤖
+
+**♻️ ChatScreen 重构**
+- 使用 `MessageBubble` 组件替代自定义渲染
+- 翻译块样式优化：绿色边框，更好的布局
+- 附件显示对齐优化：根据用户/助手角色对齐
+- 代码结构更清晰，遵循原项目风格
+
+**提交记录**
+- `a97bcda` - fix: Add emoji and other fields to Assistant model
+- `7199e84` - docs: update bug fix record
+- `4a6fa74` - refactor: Use MessageBubble component in ChatScreen
+
 ### 2024-11-01 第三轮功能完善 + Bug修复
 
 本次更新完成了所有核心功能并修复构建错误：
