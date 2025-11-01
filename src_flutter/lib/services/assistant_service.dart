@@ -9,14 +9,58 @@ class Assistant {
   final String id;
   final String name;
   final String? prompt;
-  const Assistant({required this.id, required this.name, this.prompt});
+  final String? emoji;
+  final String? description;
+  final List<String>? tags;
+  final List<String>? group;
+  
+  const Assistant({
+    required this.id,
+    required this.name,
+    this.prompt,
+    this.emoji,
+    this.description,
+    this.tags,
+    this.group,
+  });
 
-  Assistant copyWith({String? name, String? prompt}) =>
-      Assistant(id: id, name: name ?? this.name, prompt: prompt ?? this.prompt);
+  Assistant copyWith({
+    String? name,
+    String? prompt,
+    String? emoji,
+    String? description,
+    List<String>? tags,
+    List<String>? group,
+  }) =>
+      Assistant(
+        id: id,
+        name: name ?? this.name,
+        prompt: prompt ?? this.prompt,
+        emoji: emoji ?? this.emoji,
+        description: description ?? this.description,
+        tags: tags ?? this.tags,
+        group: group ?? this.group,
+      );
 
-  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'prompt': prompt};
-  static Assistant fromJson(Map m) =>
-      Assistant(id: m['id'] as String, name: m['name'] as String, prompt: m['prompt'] as String?);
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        if (prompt != null) 'prompt': prompt,
+        if (emoji != null) 'emoji': emoji,
+        if (description != null) 'description': description,
+        if (tags != null) 'tags': tags,
+        if (group != null) 'group': group,
+      };
+
+  static Assistant fromJson(Map m) => Assistant(
+        id: m['id'] as String,
+        name: m['name'] as String,
+        prompt: m['prompt'] as String?,
+        emoji: m['emoji'] as String?,
+        description: m['description'] as String?,
+        tags: m['tags'] != null ? List<String>.from(m['tags'] as List) : null,
+        group: m['group'] != null ? List<String>.from(m['group'] as List) : null,
+      );
 }
 
 class AssistantService {
@@ -31,7 +75,11 @@ class AssistantService {
 
   Future<Assistant> createAssistant() async {
     final list = await getAssistants();
-    final a = Assistant(id: newId(), name: '新助手');
+    final a = Assistant(
+      id: newId(),
+      name: '新助手',
+      emoji: '🤖',
+    );
     list.add(a);
     await saveAssistants(list);
     return a;
