@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/services.dart';
 
 import 'providers/theme.dart';
 import 'app_router.dart';
@@ -26,6 +27,25 @@ class CherryApp extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
     final theme = buildAppTheme(Brightness.light);
     final darkTheme = buildAppTheme(Brightness.dark);
+
+    final platformBrightness =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    final effectiveBrightness = switch (themeMode) {
+      ThemeMode.dark => Brightness.dark,
+      ThemeMode.light => Brightness.light,
+      ThemeMode.system => platformBrightness,
+    };
+
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness:
+            effectiveBrightness == Brightness.dark ? Brightness.light : Brightness.dark,
+        statusBarBrightness:
+            effectiveBrightness == Brightness.dark ? Brightness.dark : Brightness.light,
+      ),
+    );
+
     return MaterialApp.router(
       title: 'Cherry Flutter',
       theme: theme,

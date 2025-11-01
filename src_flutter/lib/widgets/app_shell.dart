@@ -30,7 +30,11 @@ class _AppShellState extends State<AppShell> {
       child: Scaffold(
         key: _scaffoldKey,
         drawer: const AppDrawer(),
-        body: widget.child,
+        body: SafeArea(
+          top: true,
+          bottom: false,
+          child: widget.child,
+        ),
       ),
     );
   }

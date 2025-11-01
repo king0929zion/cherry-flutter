@@ -1,36 +1,22 @@
-import 'package:flutter/material.dart';
+import 'dart:math';
+
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 
 import '../models/attachment.dart';
 import '../theme/tokens.dart';
+import '../ui/cherry_icons.dart';
 
-String _guessMime(String name) {
-  final lower = name.toLowerCase();
-  if (lower.endsWith('.png')) return 'image/png';
-  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
-  if (lower.endsWith('.gif')) return 'image/gif';
-  if (lower.endsWith('.webp')) return 'image/webp';
-  if (lower.endsWith('.txt')) return 'text/plain';
-  if (lower.endsWith('.pdf')) return 'application/pdf';
-  return 'application/octet-stream';
-}
-
-/// MessageInput - 消息输入框组件
-/// 完全复刻原项目的布局:
-/// - 外层带阴影的圆角容器
-/// - 文件预览区域
-/// - 文本输入框(多行,透明背景)
-/// - 底部工具栏:
-///   - 左侧: 工具按钮组(附件、思考、提及、MCP)
-///   - 右侧: 发送/暂停按钮(动画切换)
 class MessageInput extends StatefulWidget {
   final Future<void> Function(String text, List<PickedAttachment> attachments) onSubmit;
   final bool isSending;
+  final VoidCallback? onPause;
 
   const MessageInput({
     super.key,
     required this.onSubmit,
     this.isSending = false,
+    this.onPause,
   });
 
   @override
@@ -38,16 +24,45 @@ class MessageInput extends StatefulWidget {
 }
 
 class _MessageInputState extends State<MessageInput> {
-  final _controller = TextEditingController();
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   final List<PickedAttachment> _attachments = [];
   bool _localSending = false;
 
   bool get _isSending => widget.isSending || _localSending;
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickFiles() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      withData: true,
+    );
+    if (result == null) return;
+
+    for (final file in result.files) {
+      final bytes = file.bytes;
+      if (bytes == null) continue;
+      _attachments.add(
+        PickedAttachment(
+          name: file.name,
+          mime: _guessMime(file.name),
+          bytes: bytes,
+        ),
+      );
+    }
+    if (mounted) setState(() {});
+  }
+
   Future<void> _send() async {
     final text = _controller.text.trim();
     if ((text.isEmpty && _attachments.isEmpty) || _isSending) return;
-    
+
     setState(() => _localSending = true);
     try {
       await widget.onSubmit(text, List.unmodifiable(_attachments));
@@ -58,207 +73,313 @@ class _MessageInputState extends State<MessageInput> {
     }
   }
 
-  Future<void> _pickFiles() async {
-    final res = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
-      withData: true,
-    );
-    if (res == null) return;
-    
-    for (final f in res.files) {
-      if (f.bytes == null) continue;
-      _attachments.add(PickedAttachment(
-        name: f.name,
-        mime: _guessMime(f.name),
-        bytes: f.bytes!,
-      ));
-    }
-    if (mounted) setState(() {});
+  void _removeAttachment(int index) {
+    setState(() => _attachments.removeAt(index));
+  }
+
+  void _showComingSoon() {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('该功能暂未实现，敬请期待'),
+          duration: Duration(seconds: 2),
+        ),
+      );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    final containerPadding = max(bottomInset, 16.0);
+    final canSend = _controller.text.trim().isNotEmpty || _attachments.isNotEmpty;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 8,
-        bottom: bottomPadding > 0 ? bottomPadding : 8,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 文件预览区域
-          if (_attachments.isNotEmpty) ...[
-            _buildFilePreview(),
-            const SizedBox(height: 10),
+    final containerColor = isDark ? const Color(0xFF181B1F) : Colors.white;
+    final outlineColor =
+        isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.06);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 10, 16, containerPadding),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: containerColor,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: outlineColor),
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? Colors.black.withOpacity(0.45)
+                  : Colors.black.withOpacity(0.08),
+              blurRadius: 28,
+              offset: const Offset(0, 16),
+            ),
           ],
-          
-          // 文本输入框
-          Container(
-            constraints: const BoxConstraints(
-              minHeight: 96, // h-24
-              maxHeight: 200,
-            ),
-            child: TextField(
-              controller: _controller,
-              maxLines: null,
-              style: theme.textTheme.bodyMedium,
-              decoration: InputDecoration(
-                hintText: '输入消息...', // TODO: i18n
-                hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.textTheme.bodySmall?.color,
-                ),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 10), // gap-[10px]
-          
-          // 按钮区域
-          Row(
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 左侧工具按钮组
-              Expanded(
-                child: Row(
-                  children: [
-                    // 附件按钮
-                    _ToolIconButton(
-                      icon: Icons.attach_file,
-                      onPressed: _isSending ? null : _pickFiles,
-                      tooltip: '附件',
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                child: _attachments.isEmpty
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: List.generate(
+                              _attachments.length,
+                              (index) => Padding(
+                                padding: EdgeInsets.only(
+                                  right: index == _attachments.length - 1 ? 0 : 10,
+                                ),
+                                child: _AttachmentChip(
+                                  attachment: _attachments[index],
+                                  onRemove: () => _removeAttachment(index),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: 96,
+                  maxHeight: 200,
+                ),
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  maxLines: null,
+                  onChanged: (_) => setState(() {}),
+                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+                  decoration: InputDecoration(
+                    hintText: '输入内容…',
+                    hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                      color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
                     ),
-                    const SizedBox(width: 10),
-                    
-                    // TODO: 思考按钮 (ThinkButton)
-                    // TODO: 提及按钮 (MentionButton)
-                    // TODO: MCP按钮 (McpButton)
-                  ],
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  textInputAction: TextInputAction.newline,
                 ),
               ),
-              
-              // 右侧发送/暂停按钮
-              const SizedBox(width: 20), // gap-5
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                transitionBuilder: (child, animation) {
-                  return ScaleTransition(
-                    scale: animation,
-                    child: FadeTransition(
-                      opacity: animation,
-                      child: child,
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _ToolButton(
+                          icon: CherryIcons.assets(
+                            size: 20,
+                            color: isDark
+                                ? Tokens.textPrimaryDark
+                                : Tokens.textPrimaryLight,
+                          ),
+                          onTap: _pickFiles,
+                          semanticLabel: '添加附件',
+                        ),
+                        _ToolButton(
+                          icon: CherryIcons.lightbulbOff(
+                            size: 20,
+                            color: isDark ? Tokens.greenDark100 : Tokens.green100,
+                          ),
+                          onTap: _showComingSoon,
+                          semanticLabel: '思考模式',
+                        ),
+                        _MentionPill(onTap: _showComingSoon),
+                        _ToolButton(
+                          icon: CherryIcons.mcp(
+                            size: 20,
+                            color: isDark
+                                ? Tokens.textPrimaryDark
+                                : Tokens.textPrimaryLight,
+                          ),
+                          onTap: _showComingSoon,
+                          semanticLabel: 'MCP',
+                        ),
+                      ],
                     ),
-                  );
-                },
-                child: _isSending
-                    ? _PauseButton(
-                        key: const ValueKey('pause'),
-                        onPressed: () {
-                          // TODO: 实现暂停功能
-                        },
-                      )
-                    : _SendButton(
-                        key: const ValueKey('send'),
-                        onPressed: _controller.text.trim().isEmpty ? null : _send,
-                      ),
+                  ),
+                  const SizedBox(width: 16),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    transitionBuilder: (child, animation) => ScaleTransition(
+                      scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+                      child: FadeTransition(opacity: animation, child: child),
+                    ),
+                    child: _isSending
+                        ? _PauseButton(
+                            key: const ValueKey('pause'),
+                            onPressed: widget.onPause ?? () {},
+                          )
+                        : _SendButton(
+                            key: const ValueKey('send'),
+                            enabled: canSend,
+                            onPressed: canSend ? _send : null,
+                          ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilePreview() {
-    return SizedBox(
-      height: 80,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: _attachments.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final a = _attachments[i];
-          return _FilePreviewItem(
-            fileName: a.name,
-            onRemove: () => setState(() => _attachments.removeAt(i)),
-          );
-        },
+        ),
       ),
     );
   }
 }
 
-/// 工具图标按钮
-class _ToolIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onPressed;
-  final String tooltip;
+class _ToolButton extends StatelessWidget {
+  final Widget icon;
+  final VoidCallback? onTap;
+  final String semanticLabel;
 
-  const _ToolIconButton({
+  const _ToolButton({
     required this.icon,
-    this.onPressed,
-    required this.tooltip,
+    required this.onTap,
+    required this.semanticLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(icon, size: 24),
-      onPressed: onPressed,
-      tooltip: tooltip,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(
-        minWidth: 32,
-        minHeight: 32,
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            color: isDark ? const Color(0xFF1F242A) : const Color(0xFFF4F5F6),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.black.withOpacity(0.05),
+            ),
+          ),
+          alignment: Alignment.center,
+          child: icon,
+        ),
       ),
     );
   }
 }
 
-/// 发送按钮
-class _SendButton extends StatelessWidget {
-  final VoidCallback? onPressed;
+class _MentionPill extends StatelessWidget {
+  final VoidCallback onTap;
 
-  const _SendButton({super.key, this.onPressed});
+  const _MentionPill({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(
-        Icons.send,
-        size: 24,
-        color: onPressed == null ? Tokens.gray40 : Tokens.brand,
-      ),
-      onPressed: onPressed,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(
-        minWidth: 40,
-        minHeight: 40,
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          color: isDark ? Tokens.greenDark10 : Tokens.green10,
+          border: Border.all(
+            color: isDark ? Tokens.greenDark20 : Tokens.green20,
+            width: 0.7,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.alternate_email,
+              size: 16,
+              color: isDark ? Tokens.greenDark100 : Tokens.green100,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '模型',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isDark ? Tokens.greenDark100 : Tokens.green100,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// 暂停按钮
+class _SendButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final bool enabled;
+
+  const _SendButton({
+    super.key,
+    required this.onPressed,
+    required this.enabled,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: enabled ? onPressed : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          gradient: enabled
+              ? const LinearGradient(
+                  colors: [Color(0xFFC0E58D), Color(0xFF3BB554)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                )
+              : null,
+          color: enabled ? null : const Color(0xFF2A2F38),
+          boxShadow: enabled
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF3BB554).withOpacity(0.45),
+                    blurRadius: 18,
+                    offset: const Offset(0, 10),
+                  ),
+                ]
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: enabled
+            ? CherryIcons.arrowUp(size: 22)
+            : Icon(
+                Icons.arrow_upward,
+                size: 20,
+                color: Colors.white.withOpacity(0.4),
+              ),
+      ),
+    );
+  }
+}
+
 class _PauseButton extends StatelessWidget {
   final VoidCallback onPressed;
 
@@ -266,59 +387,88 @@ class _PauseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.stop_circle, size: 24, color: Tokens.red100),
-      onPressed: onPressed,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(
-        minWidth: 40,
-        minHeight: 40,
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          color: const Color(0xFFED6767),
+        ),
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.pause_circle_filled,
+          color: Colors.white,
+          size: 24,
+        ),
       ),
     );
   }
 }
 
-/// 文件预览项
-class _FilePreviewItem extends StatelessWidget {
-  final String fileName;
+class _AttachmentChip extends StatelessWidget {
+  final PickedAttachment attachment;
   final VoidCallback onRemove;
 
-  const _FilePreviewItem({
-    required this.fileName,
+  const _AttachmentChip({
+    required this.attachment,
     required this.onRemove,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.dividerColor),
+        borderRadius: BorderRadius.circular(14),
+        color: isDark ? const Color(0xFF1F242A) : const Color(0xFFF4F5F6),
+        border: Border.all(
+          color:
+              isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.insert_drive_file, size: 20, color: theme.iconTheme.color),
-          const SizedBox(width: 8),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 120),
-            child: Text(
-              fileName,
-              style: theme.textTheme.bodySmall,
-              overflow: TextOverflow.ellipsis,
-            ),
+          CherryIcons.assets(
+            size: 18,
+            color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
           ),
           const SizedBox(width: 8),
-          InkWell(
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: Text(
+              attachment.name,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
+          const SizedBox(width: 10),
+          GestureDetector(
             onTap: onRemove,
-            child: Icon(Icons.close, size: 16, color: theme.iconTheme.color),
+            child: Icon(
+              Icons.close_rounded,
+              size: 16,
+              color: theme.iconTheme.color?.withOpacity(0.7),
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+String _guessMime(String name) {
+  final lower = name.toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.gif')) return 'image/gif';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.txt')) return 'text/plain';
+  if (lower.endsWith('.pdf')) return 'application/pdf';
+  return 'application/octet-stream';
 }

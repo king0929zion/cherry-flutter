@@ -65,7 +65,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          flutter pub add go_router flutter_riverpod shared_preferences uuid hive hive_flutter path_provider http flutter_markdown url_launcher collection file_picker
+          flutter pub add go_router flutter_riverpod shared_preferences uuid hive hive_flutter path_provider http flutter_markdown url_launcher collection file_picker flutter_svg
           flutter pub add flutter_localizations --sdk=flutter
           flutter pub get
 
