@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter/services.dart';
 
 import '../../providers/app_state.dart';
@@ -8,10 +7,12 @@ import '../../providers/provider_settings.dart';
 import '../../services/message_service.dart';
 import '../../services/topic_service.dart';
 import '../../widgets/message_input.dart';
+import '../../widgets/message_bubble.dart';
 import '../../services/block_service.dart';
 import '../../models/block.dart';
 import 'widgets/attachment_tile.dart';
 import '../../providers/streaming.dart';
+import 'widgets/chat_header.dart';
 
 class ChatScreen extends ConsumerWidget {
   final String topicId;
@@ -63,124 +64,135 @@ class ChatScreen extends ConsumerWidget {
                   itemBuilder: (ctx, i) {
                     final m = list[i];
                     final isUser = m.role == 'user';
-                    return Align(
-                      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                      child: GestureDetector(
-                        onLongPress: () async {
-                          final action = await showModalBottomSheet<String>(
-                            context: context,
-                            builder: (_) => SafeArea(
-                              child: Wrap(children: [
-                                ListTile(
-                                  leading: const Icon(Icons.translate),
-                                  title: const Text('翻译为中文'),
-                                  onTap: () => Navigator.pop(context, 'zh'),
-                                ),
-                                ListTile(
-                                  leading: const Icon(Icons.translate),
-                                  title: const Text('Translate to English'),
-                                  onTap: () => Navigator.pop(context, 'en'),
-                                ),
-                                const Divider(height: 1),
-                                ListTile(
-                                  leading: const Icon(Icons.copy),
-                                  title: const Text('复制'),
-                                  onTap: () => Navigator.pop(context, 'copy'),
-                                ),
-                                if (!isUser)
-                                  ListTile(
-                                    leading: const Icon(Icons.refresh),
-                                    title: const Text('重新生成'),
-                                    onTap: () => Navigator.pop(context, 'regen'),
-                                  ),
-                                ListTile(
-                                  leading: const Icon(Icons.delete_outline),
-                                  title: const Text('删除'),
-                                  onTap: () => Navigator.pop(context, 'delete'),
-                                ),
-                              ]),
-                            ),
-                          );
-                          if (action == 'zh' || action == 'en') {
-                            await ref.read(messageServiceProvider).translateMessage(
-                                  messageId: m.id,
-                                  lang: action == 'zh' ? '中文' : 'English',
-                                  ref: ref,
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Column(
+                        children: [
+                          // 主消息气泡
+                          MessageBubble(
+                            content: m.content,
+                            isUser: isUser,
+                            onCopy: () async {
+                              await Clipboard.setData(ClipboardData(text: m.content));
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('已复制')),
                                 );
-                            ref.invalidate(translationBlockProvider(m.id));
-                          } else if (action == 'copy') {
-                            await Clipboard.setData(ClipboardData(text: m.content));
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(const SnackBar(content: Text('已复制')));
-                            }
-                          } else if (action == 'regen' && !isUser) {
-                            await ref
-                                .read(messageServiceProvider)
-                                .regenerateAssistant(assistantMessageId: m.id, topicId: effectiveTopic, ref: ref);
-                            ref.invalidate(messagesProvider(effectiveTopic));
-                          } else if (action == 'delete') {
-                            await ref.read(messageServiceProvider).deleteMessage(m.id);
-                            ref.invalidate(messagesProvider(effectiveTopic));
-                          }
-                        },
-                        child: Column(
-                          crossAxisAlignment:
-                              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              margin: const EdgeInsets.symmetric(vertical: 6),
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: isUser
-                                    ? Colors.blue.shade600
-                                    : Colors.grey.shade800,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: MarkdownBody(
-                                data: m.content,
-                                styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-                                  p: const TextStyle(color: Colors.white),
-                                  code: const TextStyle(color: Colors.white70, fontFamily: 'monospace'),
-                                ),
-                              ),
-                            ),
-                            Consumer(builder: (context, ref, _) {
-                              final trans = ref.watch(translationBlockProvider(m.id));
-                              return trans.when(
-                                data: (b) => b == null
-                                    ? const SizedBox.shrink()
-                                    : Container(
-                                        margin: const EdgeInsets.only(bottom: 6),
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.green.shade800,
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(b.content,
-                                            style: const TextStyle(color: Colors.white70)),
+                              }
+                            },
+                            onTranslate: () async {
+                              // 显示语言选择
+                              final lang = await showModalBottomSheet<String>(
+                                context: context,
+                                builder: (_) => SafeArea(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ListTile(
+                                        leading: const Icon(Icons.translate),
+                                        title: const Text('翻译为中文'),
+                                        onTap: () => Navigator.pop(context, 'zh'),
                                       ),
-                                loading: () => const SizedBox.shrink(),
-                                error: (e, _) => const SizedBox.shrink(),
-                              );
-                            }),
-                            Consumer(builder: (context, ref, _) {
-                              final atts = ref.watch(attachmentsProvider(m.id));
-                              return atts.when(
-                                data: (list) => Column(
-                                  crossAxisAlignment:
-                                      isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                                  children: [
-                                    for (final b in list)
-                                      AttachmentTile(block: b),
-                                  ],
+                                      ListTile(
+                                        leading: const Icon(Icons.translate),
+                                        title: const Text('Translate to English'),
+                                        onTap: () => Navigator.pop(context, 'en'),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                loading: () => const SizedBox.shrink(),
-                                error: (e, _) => const SizedBox.shrink(),
                               );
-                            }),
-                          ],
-                        ),
+                              if (lang != null) {
+                                await ref.read(messageServiceProvider).translateMessage(
+                                      messageId: m.id,
+                                      lang: lang == 'zh' ? '中文' : 'English',
+                                      ref: ref,
+                                    );
+                                ref.invalidate(translationBlockProvider(m.id));
+                              }
+                            },
+                            onRegenerate: !isUser
+                                ? () async {
+                                    await ref.read(messageServiceProvider).regenerateAssistant(
+                                          assistantMessageId: m.id,
+                                          topicId: effectiveTopic,
+                                          ref: ref,
+                                        );
+                                    ref.invalidate(messagesProvider(effectiveTopic));
+                                  }
+                                : null,
+                            onDelete: () async {
+                              await ref.read(messageServiceProvider).deleteMessage(m.id);
+                              ref.invalidate(messagesProvider(effectiveTopic));
+                            },
+                          ),
+                          
+                          // 翻译块
+                          Consumer(builder: (context, ref, _) {
+                            final trans = ref.watch(translationBlockProvider(m.id));
+                            return trans.when(
+                              data: (b) => b == null
+                                  ? const SizedBox.shrink()
+                                  : Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                                        child: Align(
+                                          alignment: isUser
+                                              ? Alignment.centerRight
+                                              : Alignment.centerLeft,
+                                          child: Container(
+                                            constraints: BoxConstraints(
+                                              maxWidth: MediaQuery.of(context).size.width * 0.75,
+                                            ),
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green.withOpacity(0.1),
+                                              border: Border.all(
+                                                color: Colors.green.withOpacity(0.3),
+                                              ),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              b.content,
+                                              style: Theme.of(context).textTheme.bodyMedium,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                              loading: () => const SizedBox.shrink(),
+                              error: (e, _) => const SizedBox.shrink(),
+                            );
+                          }),
+                          
+                          // 附件
+                          Consumer(builder: (context, ref, _) {
+                            final atts = ref.watch(attachmentsProvider(m.id));
+                            return atts.when(
+                              data: (list) => list.isEmpty
+                                  ? const SizedBox.shrink()
+                                  : Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Column(
+                                        crossAxisAlignment: isUser
+                                            ? CrossAxisAlignment.end
+                                            : CrossAxisAlignment.start,
+                                        children: [
+                                          for (final b in list)
+                                            Padding(
+                                              padding: const EdgeInsets.only(bottom: 4),
+                                              child: AttachmentTile(block: b),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                              loading: () => const SizedBox.shrink(),
+                              error: (e, _) => const SizedBox.shrink(),
+                            );
+                          }),
+                        ],
                       ),
                     );
                   },
