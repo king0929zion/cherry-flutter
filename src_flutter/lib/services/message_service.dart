@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/boxes.dart';
 import '../models/message.dart';
 import '../utils/ids.dart';
+import 'llm_service.dart';
 
 class MessageService {
   Future<List<ChatMessage>> getMessagesByTopic(String topicId) async {
@@ -59,6 +60,13 @@ class MessageService {
   Future<ChatMessage> simulateAssistantReply({required String topicId, required String prompt}) async {
     await Future.delayed(const Duration(milliseconds: 400));
     return createAssistantMessage(topicId: topicId, content: '回声：$prompt');
+  }
+
+  Future<void> sendWithLlm({required String topicId, required String text, required Ref ref}) async {
+    final user = await createUserMessage(topicId: topicId, content: text);
+    final history = await getMessagesByTopic(topicId);
+    final reply = await ref.read(llmServiceProvider).complete(context: history);
+    await createAssistantMessage(topicId: topicId, content: reply.isEmpty ? '（空响应）' : reply);
   }
 }
 

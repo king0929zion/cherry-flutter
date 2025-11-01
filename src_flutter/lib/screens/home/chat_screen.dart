@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/app_state.dart';
+import '../../providers/provider_settings.dart';
 import '../../services/message_service.dart';
 import '../../services/topic_service.dart';
 import '../../widgets/message_input.dart';
@@ -21,10 +22,19 @@ class ChatScreen extends ConsumerWidget {
     }
 
     final messages = ref.watch(messagesProvider(effectiveTopic));
+    final cfg = ref.watch(providerSettingsProvider);
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
+            if (cfg.apiKey.isEmpty)
+              Material(
+                color: Colors.amber.shade100,
+                child: ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: const Text('请先在 设置 -> 供应商 设置 OpenAI API Key 才能调用模型'),
+                ),
+              ),
             Expanded(
               child: messages.when(
                 data: (list) => ListView.builder(
@@ -59,8 +69,7 @@ class ChatScreen extends ConsumerWidget {
               final topicSvc = ref.read(topicServiceProvider);
               // Ensure topic exists and set current if default route
               String tid = effectiveTopic;
-              await msgSvc.createUserMessage(topicId: tid, content: text);
-              await msgSvc.simulateAssistantReply(topicId: tid, prompt: text);
+              await msgSvc.sendWithLlm(topicId: tid, text: text, ref: ref);
               // refresh
               ref.invalidate(messagesProvider(tid));
             }),

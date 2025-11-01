@@ -1,5 +1,3 @@
-import 'package:hive_flutter/hive_flutter.dart';
-
 import '../data/boxes.dart';
 
 class PrefsService {
@@ -7,6 +5,12 @@ class PrefsService {
 
   String? getCurrentTopicId() => Boxes.prefs.get(currentTopicKey) as String?;
   Future<void> setCurrentTopicId(String id) => Boxes.prefs.put(currentTopicKey, id);
+
+  String? getString(String key) => Boxes.prefs.get(key) as String?;
+  Future<void> setString(String key, String value) => Boxes.prefs.put(key, value);
+
+  double? getDouble(String key) => Boxes.prefs.get(key) as double?;
+  Future<void> setDouble(String key, double value) => Boxes.prefs.put(key, value);
 }
 
 final prefsService = PrefsService();
