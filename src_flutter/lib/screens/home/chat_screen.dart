@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter/services.dart';
 
 import '../../providers/app_state.dart';
 import '../../providers/provider_settings.dart';
@@ -34,6 +36,13 @@ class ChatScreen extends ConsumerWidget {
         child: Column(
           children: [
             if (cfg.apiKey.isEmpty)
+              Material(
+                color: Colors.amber.shade100,
+                child: const ListTile(
+                  leading: Icon(Icons.info_outline),
+                  title: Text('请先在 设置 -> 供应商 设置 OpenAI API Key 才能调用模型'),
+                ),
+              ),
             if (isStreaming)
               Material(
                 color: Colors.blueGrey.shade50,
@@ -44,13 +53,6 @@ class ChatScreen extends ConsumerWidget {
                     onPressed: () => ref.read(streamingProvider.notifier).cancel(effectiveTopic),
                     child: const Text('取消'),
                   ),
-                ),
-              ),
-              Material(
-                color: Colors.amber.shade100,
-                child: ListTile(
-                  leading: const Icon(Icons.info_outline),
-                  title: const Text('请先在 设置 -> 供应商 设置 OpenAI API Key 才能调用模型'),
                 ),
               ),
             Expanded(
@@ -79,16 +81,47 @@ class ChatScreen extends ConsumerWidget {
                                   title: const Text('Translate to English'),
                                   onTap: () => Navigator.pop(context, 'en'),
                                 ),
+                                const Divider(height: 1),
+                                ListTile(
+                                  leading: const Icon(Icons.copy),
+                                  title: const Text('复制'),
+                                  onTap: () => Navigator.pop(context, 'copy'),
+                                ),
+                                if (!isUser)
+                                  ListTile(
+                                    leading: const Icon(Icons.refresh),
+                                    title: const Text('重新生成'),
+                                    onTap: () => Navigator.pop(context, 'regen'),
+                                  ),
+                                ListTile(
+                                  leading: const Icon(Icons.delete_outline),
+                                  title: const Text('删除'),
+                                  onTap: () => Navigator.pop(context, 'delete'),
+                                ),
                               ]),
                             ),
                           );
-                          if (action != null) {
+                          if (action == 'zh' || action == 'en') {
                             await ref.read(messageServiceProvider).translateMessage(
                                   messageId: m.id,
                                   lang: action == 'zh' ? '中文' : 'English',
                                   ref: ref,
                                 );
                             ref.invalidate(translationBlockProvider(m.id));
+                          } else if (action == 'copy') {
+                            await Clipboard.setData(ClipboardData(text: m.content));
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(const SnackBar(content: Text('已复制')));
+                            }
+                          } else if (action == 'regen' && !isUser) {
+                            await ref
+                                .read(messageServiceProvider)
+                                .regenerateAssistant(assistantMessageId: m.id, topicId: effectiveTopic, ref: ref);
+                            ref.invalidate(messagesProvider(effectiveTopic));
+                          } else if (action == 'delete') {
+                            await ref.read(messageServiceProvider).deleteMessage(m.id);
+                            ref.invalidate(messagesProvider(effectiveTopic));
                           }
                         },
                         child: Column(
@@ -104,9 +137,12 @@ class ChatScreen extends ConsumerWidget {
                                     : Colors.grey.shade800,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Text(
-                                m.content,
-                                style: const TextStyle(color: Colors.white),
+                              child: MarkdownBody(
+                                data: m.content,
+                                styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+                                  p: const TextStyle(color: Colors.white),
+                                  code: const TextStyle(color: Colors.white70, fontFamily: 'monospace'),
+                                ),
                               ),
                             ),
                             Consumer(builder: (context, ref, _) {

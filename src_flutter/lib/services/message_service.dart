@@ -115,6 +115,61 @@ class MessageService {
       },
     );
     ref.read(streamingProvider.notifier).stop(topicId);
+
+    // Smart topic naming on first replies
+    try {
+      final topics = await ref.read(topicServiceProvider).getTopics();
+      final t = topics.firstWhere((e) => e.id == topicId);
+      if (t.name == '新主题' || t.name.trim().length < 3) {
+        final hist = await getMessagesByTopic(topicId);
+        final sample = hist.reversed.take(6).toList().reversed.toList();
+        final prompt = '基于以下对话生成一个不超过10个字的简短标题（不含标点）：\n' +
+            sample.map((m) => '${m.role}: ${m.content}').join('\n');
+        final title = await ref.read(llmServiceProvider).complete(
+              context: [
+                ChatMessage(
+                    id: newId(), role: 'system', content: '你是标题生成器，只输出标题本身。', createdAt: DateTime.now()),
+                ChatMessage(id: newId(), role: 'user', content: prompt, createdAt: DateTime.now()),
+              ],
+              cfg: cfg,
+            );
+        final finalTitle = title.trim().replaceAll(RegExp(r'[\r\n]'), '').replaceAll('。', '');
+        if (finalTitle.isNotEmpty) {
+          await ref.read(topicServiceProvider).renameTopic(topicId, finalTitle);
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> deleteMessage(String messageId) async {
+    await Boxes.messages.delete(messageId);
+    // delete related blocks
+    final toDelete = <dynamic>[];
+    for (final key in Boxes.blocks.keys) {
+      final m = Boxes.blocks.get(key) as Map?;
+      if (m != null && m['messageId'] == messageId) toDelete.add(key);
+    }
+    for (final k in toDelete) {
+      await Boxes.blocks.delete(k);
+    }
+  }
+
+  Future<void> regenerateAssistant({required String assistantMessageId, required String topicId, required WidgetRef ref}) async {
+    // find the prior user message
+    final msgs = await getMessagesByTopic(topicId);
+    final idx = msgs.indexWhere((m) => m.id == assistantMessageId);
+    if (idx <= 0) return;
+    String text = '';
+    for (int i = idx - 1; i >= 0; i--) {
+      if (msgs[i].role == 'user') {
+        text = msgs[i].content;
+        break;
+      }
+    }
+    if (text.isEmpty) {
+      text = '请基于上述对话重新回答上一条提问。';
+    }
+    await sendWithLlm(topicId: topicId, text: text, ref: ref);
   }
 
   Future<void> translateMessage({required String messageId, required String lang, required WidgetRef ref}) async {
