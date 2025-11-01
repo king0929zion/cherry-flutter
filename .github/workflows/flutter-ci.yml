@@ -39,7 +39,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          flutter pub add go_router flutter_riverpod shared_preferences uuid hive hive_flutter path_provider http
+          flutter pub add go_router flutter_riverpod shared_preferences uuid hive hive_flutter path_provider http flutter_markdown url_launcher collection
           flutter pub get
 
       - name: Build Web

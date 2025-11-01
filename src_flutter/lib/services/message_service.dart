@@ -63,10 +63,26 @@ class MessageService {
   }
 
   Future<void> sendWithLlm({required String topicId, required String text, required Ref ref}) async {
-    final user = await createUserMessage(topicId: topicId, content: text);
+    await createUserMessage(topicId: topicId, content: text);
     final history = await getMessagesByTopic(topicId);
-    final reply = await ref.read(llmServiceProvider).complete(context: history);
-    await createAssistantMessage(topicId: topicId, content: reply.isEmpty ? '（空响应）' : reply);
+    final assistant = await createAssistantMessage(topicId: topicId, content: '');
+    String buffer = '';
+    await ref.read(llmServiceProvider).streamComplete(
+      context: history,
+      onDelta: (d) async {
+        buffer += d;
+        final updated = ChatMessage(
+          id: assistant.id,
+          role: assistant.role,
+          content: buffer,
+          createdAt: assistant.createdAt,
+        );
+        await Boxes.messages.put(assistant.id, {
+          'topicId': topicId,
+          'data': updated.toJson(),
+        });
+      },
+    );
   }
 }
 

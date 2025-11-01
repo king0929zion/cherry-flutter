@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -39,6 +40,63 @@ class LlmService {
         ? (choices.first['message']?['content'] as String? ?? '')
         : '';
     return content;
+  }
+
+  Future<void> streamComplete({
+    required List<ChatMessage> context,
+    required void Function(String delta) onDelta,
+  }) async {
+    final cfg = ref.read(providerSettingsProvider);
+    if (cfg.apiKey.isEmpty) {
+      throw StateError('请先在设置中配置 OpenAI API Key');
+    }
+
+    final uri = Uri.parse('${cfg.baseUrl}/chat/completions');
+    final reqBody = jsonEncode({
+      'model': cfg.model,
+      'temperature': cfg.temperature,
+      'stream': true,
+      'messages': context.map((m) => {'role': m.role, 'content': m.content}).toList(),
+    });
+
+    final request = http.Request('POST', uri)
+      ..headers.addAll({
+        HttpHeaders.contentTypeHeader: 'application/json',
+        HttpHeaders.authorizationHeader: 'Bearer ${cfg.apiKey}',
+      })
+      ..body = reqBody;
+
+    final client = http.Client();
+    try {
+      final streamed = await client.send(request);
+      if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
+        final body = await streamed.stream.bytesToString();
+        throw StateError('LLM 流式调用失败: ${streamed.statusCode} $body');
+      }
+      final utf8Stream = streamed.stream.transform(utf8.decoder);
+      await for (final chunk in utf8Stream) {
+        for (final line in chunk.split('\n')) {
+          final s = line.trim();
+          if (s.isEmpty) continue;
+          if (!s.startsWith('data:')) continue;
+          final payload = s.substring(5).trim();
+          if (payload == '[DONE]') return;
+          try {
+            final map = jsonDecode(payload) as Map<String, dynamic>;
+            final choices = map['choices'] as List?;
+            if (choices != null && choices.isNotEmpty) {
+              final delta = choices.first['delta'];
+              final text = (delta?['content'] as String?) ?? '';
+              if (text.isNotEmpty) onDelta(text);
+            }
+          } catch (_) {
+            // ignore parse errors of incomplete lines
+          }
+        }
+      }
+    } finally {
+      client.close();
+    }
   }
 }
 
