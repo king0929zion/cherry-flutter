@@ -96,7 +96,7 @@ class Assistant {
       );
 }
 
-﻿class AssistantService {
+class AssistantService {
   static const String _assistantsKey = 'assistants';
   static const Map<String, String> assignmentKeys = {
     'default': 'assistant.assign.default',
