@@ -91,7 +91,7 @@ ThemeData buildAppTheme(Brightness brightness) {
     iconTheme: IconThemeData(color: secondary, size: 24),
     
     // Card
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: card,
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -180,7 +180,7 @@ ThemeData buildAppTheme(Brightness brightness) {
     ),
     
     // Dialog
-    dialogTheme: DialogTheme(
+    dialogTheme: DialogThemeData(
       backgroundColor: card,
       elevation: 0,
       shape: RoundedRectangleBorder(

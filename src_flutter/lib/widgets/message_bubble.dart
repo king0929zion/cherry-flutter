@@ -11,12 +11,20 @@ class MessageBubble extends StatelessWidget {
   final String content;
   final bool isUser;
   final VoidCallback? onLongPress;
+  final VoidCallback? onCopy;
+  final VoidCallback? onTranslate;
+  final VoidCallback? onRegenerate;
+  final VoidCallback? onDelete;
 
   const MessageBubble({
     super.key,
     required this.content,
     required this.isUser,
     this.onLongPress,
+    this.onCopy,
+    this.onTranslate,
+    this.onRegenerate,
+    this.onDelete,
   });
 
   @override
@@ -32,7 +40,7 @@ class MessageBubble extends StatelessWidget {
         child: Align(
           alignment: Alignment.centerRight,
           child: GestureDetector(
-            onLongPress: onLongPress,
+            onLongPress: () => _showContextMenu(context),
             child: Container(
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.75,
@@ -64,7 +72,7 @@ class MessageBubble extends StatelessWidget {
         child: Align(
           alignment: Alignment.centerLeft,
           child: GestureDetector(
-            onLongPress: onLongPress,
+            onLongPress: () => _showContextMenu(context),
             child: Container(
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.85,
@@ -79,6 +87,55 @@ class MessageBubble extends StatelessWidget {
         ),
       );
     }
+  }
+
+  void _showContextMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (onCopy != null)
+              ListTile(
+                leading: const Icon(Icons.copy),
+                title: const Text('复制'), // TODO: i18n
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onCopy?.call();
+                },
+              ),
+            if (onTranslate != null)
+              ListTile(
+                leading: const Icon(Icons.translate),
+                title: const Text('翻译'), // TODO: i18n
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onTranslate?.call();
+                },
+              ),
+            if (onRegenerate != null && !isUser)
+              ListTile(
+                leading: const Icon(Icons.refresh),
+                title: const Text('重新生成'), // TODO: i18n
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onRegenerate?.call();
+                },
+              ),
+            if (onDelete != null)
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('删除', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onDelete?.call();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildContent(BuildContext context, bool isDark) {
