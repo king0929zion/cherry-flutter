@@ -57,9 +57,12 @@ jobs:
       - name: Configure project assets
         shell: bash
         run: |
-          if [ -d "assets/data" ]; then
+          if [ -f "pubspec.yaml" ]; then
             if ! grep -q "assets/data/assistants-zh.json" pubspec.yaml; then
-              perl -0pi -e 's#flutter:\n  uses-material-design: true#flutter:\n  uses-material-design: true\n  assets:\n    - assets/data/assistants-zh.json\n    - assets/data/assistants-en.json#' pubspec.yaml
+              perl -0pi -e 's#flutter:\n  uses-material-design: true#flutter:\n  uses-material-design: true\n  assets:\n    - assets/data/assistants-zh.json\n    - assets/data/assistants-en.json\n    - assets/images/code_language_icons/#' pubspec.yaml
+            fi
+            if ! grep -q "assets/images/code_language_icons/" pubspec.yaml; then
+              perl -0pi -e 's#assets/data/assistants-en.json#assets/data/assistants-en.json\n    - assets/images/code_language_icons/#' pubspec.yaml
             fi
           fi
 

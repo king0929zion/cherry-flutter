@@ -54,3 +54,8 @@
 - 引入内置助手数据资产（中/英）并接入导入与聊天流程。
 - 供应商 / 通用 / 数据管理页面升级为卡片化布局，加入温度滑块、快捷操作与安全提示。
 - 更新 GitHub Actions 自动复制 `src_flutter/assets` 并注入 `pubspec.yaml`，保证构建一致性。
+
+### 2025-11-02 聊天 Markdown & 气泡细节复刻 ✅
+- 调整 MessageBubble 结构与圆角，重现原版绿色填充、边框与投影。
+- 新增 CherryMarkdown 组件，定制代码块工具栏、引用块与链接行为，Markdown 样式与原项目一致。
+- 引入原项目代码语言图标并更新 CI，确保 GitHub Actions 构建时自动声明资产路径。
