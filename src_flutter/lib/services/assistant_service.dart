@@ -1,257 +1,216 @@
-import 'dart:async';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'dart:convert';
+import 'package:uuid/uuid.dart';
 import '../data/boxes.dart';
-import '../utils/ids.dart';
-import 'built_in_assistants_loader.dart';
+import '../models/assistant.dart';
 
-class Assistant {
-  final String id;
-  final String name;
-  final String? prompt;
-  final String? emoji;
-  final String? description;
-  final List<String>? tags;
-  final List<String>? group;
-  final String? type;
-  final Map<String, dynamic>? settings;
-  final Map<String, dynamic>? model;
-  final List<String>? topics;
+class AssistantService {
+  static final AssistantService _instance = AssistantService._internal();
+  factory AssistantService() => _instance;
+  AssistantService._internal();
 
-  const Assistant({
-    required this.id,
-    required this.name,
-    this.prompt,
-    this.emoji,
-    this.description,
-    this.tags,
-    this.group,
-    this.type,
-    this.settings,
-    this.model,
-    this.topics,
-  });
+  final _uuid = const Uuid();
 
-  Assistant copyWith({
-    String? id,
+  // 获取所有助手
+  List<AssistantModel> getAllAssistants() {
+    final box = HiveBoxes.getAssistantsBox();
+    return box.values.toList();
+  }
+
+  // 根据ID获取助手
+  AssistantModel? getAssistantById(String id) {
+    final box = HiveBoxes.getAssistantsBox();
+    return box.get(id);
+  }
+
+  // 创建新助手
+  Future<AssistantModel> createAssistant({
+    required String name,
+    required String prompt,
+    String type = 'custom',
+    String? emoji,
+    String? description,
+    String? model,
+    String? defaultModel,
+    String? settings,
+    bool enableWebSearch = false,
+    bool enableGenerateImage = false,
+    String? mcpServers,
+    String? knowledgeRecognition,
+    String? tags,
+    String? group,
+    String? websearchProviderId,
+  }) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final assistant = AssistantModel(
+      id: _uuid.v4(),
+      name: name,
+      prompt: prompt,
+      type: type,
+      emoji: emoji,
+      description: description,
+      model: model,
+      defaultModel: defaultModel,
+      settings: settings,
+      enableWebSearch: enableWebSearch,
+      enableGenerateImage: enableGenerateImage,
+      mcpServers: mcpServers,
+      knowledgeRecognition: knowledgeRecognition,
+      tags: tags,
+      group: group,
+      websearchProviderId: websearchProviderId,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    final box = HiveBoxes.getAssistantsBox();
+    await box.put(assistant.id, assistant);
+    return assistant;
+  }
+
+  // 更新助手
+  Future<void> updateAssistant(String id, {
     String? name,
     String? prompt,
     String? emoji,
     String? description,
-    List<String>? tags,
-    List<String>? group,
-    String? type,
-    Map<String, dynamic>? settings,
-    Map<String, dynamic>? model,
-    List<String>? topics,
-  }) =>
-      Assistant(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        prompt: prompt ?? this.prompt,
-        emoji: emoji ?? this.emoji,
-        description: description ?? this.description,
-        tags: tags ?? this.tags,
-        group: group ?? this.group,
-        type: type ?? this.type,
-        settings: settings ?? this.settings,
-        model: model ?? this.model,
-        topics: topics ?? this.topics,
+    String? model,
+    String? defaultModel,
+    String? settings,
+    bool? enableWebSearch,
+    bool? enableGenerateImage,
+    String? mcpServers,
+    String? knowledgeRecognition,
+    String? tags,
+    String? group,
+    String? websearchProviderId,
+  }) async {
+    final box = HiveBoxes.getAssistantsBox();
+    final assistant = box.get(id);
+    if (assistant != null) {
+      final updatedAssistant = assistant.copyWith(
+        name: name,
+        prompt: prompt,
+        emoji: emoji,
+        description: description,
+        model: model,
+        defaultModel: defaultModel,
+        settings: settings,
+        enableWebSearch: enableWebSearch,
+        enableGenerateImage: enableGenerateImage,
+        mcpServers: mcpServers,
+        knowledgeRecognition: knowledgeRecognition,
+        tags: tags,
+        group: group,
+        websearchProviderId: websearchProviderId,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
       );
+      await box.put(id, updatedAssistant);
+    }
+  }
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        if (prompt != null) 'prompt': prompt,
-        if (emoji != null) 'emoji': emoji,
-        if (description != null) 'description': description,
-        if (tags != null) 'tags': tags,
-        if (group != null) 'group': group,
-        if (type != null) 'type': type,
-        if (settings != null) 'settings': settings,
-        if (model != null) 'model': model,
-        if (topics != null) 'topics': topics,
-      };
+  // 删除助手
+  Future<void> deleteAssistant(String id) async {
+    final box = HiveBoxes.getAssistantsBox();
+    await box.delete(id);
+  }
 
-  static Assistant fromJson(Map m) => Assistant(
-        id: m['id']?.toString() ?? '',
-        name: (m['name'] ?? '') as String,
-        prompt: m['prompt'] as String?,
-        emoji: m['emoji'] as String?,
-        description: m['description'] as String?,
-        tags: m['tags'] != null
-            ? List<String>.from((m['tags'] as List).map((e) => e.toString()))
-            : null,
-        group: m['group'] != null
-            ? List<String>.from((m['group'] as List).map((e) => e.toString()))
-            : null,
-        type: m['type'] as String?,
-        settings:
-            m['settings'] != null ? Map<String, dynamic>.from(m['settings'] as Map) : null,
-        model: m['model'] != null ? Map<String, dynamic>.from(m['model'] as Map) : null,
-        topics: m['topics'] != null
-            ? List<String>.from((m['topics'] as List).map((e) => e.toString()))
-            : null,
-      );
-}
+  // 获取内置助手
+  List<AssistantModel> getBuiltInAssistants() {
+    final assistants = getAllAssistants();
+    return assistants.where((a) => a.type == 'built_in').toList();
+  }
 
-class AssistantService {
-  static const String _assistantsKey = 'assistants';
-  static const Map<String, String> assignmentKeys = {
-    'default': 'assistant.assign.default',
-    'quick': 'assistant.assign.quick',
-    'translate': 'assistant.assign.translate',
-  };
+  // 获取自定义助手
+  List<AssistantModel> getCustomAssistants() {
+    final assistants = getAllAssistants();
+    return assistants.where((a) => a.type == 'custom').toList();
+  }
 
-  static const List<Assistant> _systemAssistants = [
-    Assistant(
-      id: 'default',
-      name: '默认助手',
-      emoji: '🤖',
-      description: '适用于日常对话的通用助手。',
-      prompt: '你是 Cherry Studio 的默认助手，需要提供准确、有帮助、友善的回答。',
-      tags: ['默认', '通用'],
-      type: 'system',
-    ),
-    Assistant(
-      id: 'quick',
-      name: '快速助手',
-      emoji: '⚡',
-      description: '针对快速问答场景，回复更简洁直接。',
-      prompt: '你是一个反应迅速的助手，回答要点即可，尽量控制在两句话内。',
-      tags: ['快捷', '效率'],
-      type: 'system',
-    ),
-    Assistant(
-      id: 'translate',
-      name: '翻译助手',
-      emoji: '🌐',
-      description: '专注于中英文互译与润色。',
-      prompt: '你是专业的翻译助手，请提供自然、准确的双语翻译，并保持原意。',
-      tags: ['翻译', '语言'],
-      type: 'system',
-    ),
-  ];
+  // 初始化内置助手
+  Future<void> initializeBuiltInAssistants() async {
+    final box = HiveBoxes.getAssistantsBox();
+    final builtInIds = ['default', 'quick', 'translate'];
+    
+    for (final id in builtInIds) {
+      if (!box.containsKey(id)) {
+        final assistant = _createBuiltInAssistant(id);
+        await box.put(assistant.id, assistant);
+      }
+    }
+  }
 
-  Future<List<Assistant>> getAssistants() async {
-    final raw = Boxes.prefs.get(_assistantsKey) as List? ?? [];
-    final Map<String, Assistant> byId = {
-      for (final item in raw)
-        (item as Map)['id'] as String:
-            Assistant.fromJson(Map<String, dynamic>.from(item as Map)),
-    };
-
-    var changed = false;
-    for (final builtIn in _systemAssistants) {
-      final existing = byId[builtIn.id];
-      if (existing == null) {
-        byId[builtIn.id] = builtIn;
-        changed = true;
-      } else {
-        byId[builtIn.id] = existing.copyWith(
-          name: existing.name.isEmpty ? builtIn.name : existing.name,
-          emoji: existing.emoji ?? builtIn.emoji,
-          description: existing.description ?? builtIn.description,
-          prompt: existing.prompt ?? builtIn.prompt,
-          tags: existing.tags ?? builtIn.tags,
-          type: existing.type ?? builtIn.type,
+  AssistantModel _createBuiltInAssistant(String id) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    
+    switch (id) {
+      case 'default':
+        return AssistantModel(
+          id: 'default',
+          name: 'Cherry',
+          prompt: '你是Cherry，一个友好、智能的AI助手。我致力于为用户提供有帮助、准确且安全的回答。',
+          type: 'built_in',
+          emoji: '🍒',
+          description: '默认AI助手，适合日常对话和问题解答',
+          createdAt: now,
+          updatedAt: now,
         );
-      }
-    }
-
-    final ordered = <Assistant>[];
-    for (final builtIn in _systemAssistants) {
-      final assistant = byId.remove(builtIn.id);
-      if (assistant != null) ordered.add(assistant);
-    }
-    ordered.addAll(byId.values);
-
-    if (changed || ordered.length != raw.length) {
-      await saveAssistants(ordered);
-    }
-
-    return ordered;
-  }
-
-  Future<void> saveAssistants(List<Assistant> list) async {
-    await Boxes.prefs.put(
-      _assistantsKey,
-      list.map((assistant) => assistant.toJson()).toList(),
-    );
-  }
-
-  Future<Assistant> createAssistant({Assistant? template}) async {
-    final list = await getAssistants();
-    final assistant = Assistant(
-      id: template?.id ?? newId(),
-      name: template?.name ?? '新助手',
-      emoji: template?.emoji ?? '🤖',
-      description: template?.description,
-      prompt: template?.prompt,
-      tags: template?.tags,
-      group: template?.group,
-      type: template?.type ?? 'external',
-      settings: template?.settings,
-      model: template?.model,
-      topics: template?.topics,
-    );
-    list.add(assistant);
-    await saveAssistants(list);
-    return assistant;
-  }
-
-  Future<Assistant?> getAssistant(String id) async {
-    final list = await getAssistants();
-    for (final assistant in list) {
-      if (assistant.id == id) return assistant;
-    }
-    return null;
-  }
-
-  Future<List<Assistant>> getBuiltInAssistants(String languageCode) async {
-    final list = await builtInAssistantsLoader.load(languageCode);
-    return list
-        .map((assistant) => assistant.copyWith(type: assistant.type ?? 'builtIn'))
-        .toList(growable: false);
-  }
-
-  Future<Assistant> importBuiltInAssistant(Assistant assistant) async {
-    return createAssistant(
-      template: assistant.copyWith(
-        id: newId(),
-        type: 'external',
-      ),
-    );
-  }
-
-  Map<String, String?> readAssignments() {
-    return {
-      for (final entry in assignmentKeys.entries)
-        entry.key: Boxes.prefs.get(entry.value) as String?,
-    };
-  }
-
-  Future<void> ensureAssignments(List<Assistant> assistants) async {
-    if (assistants.isEmpty) return;
-    final ids = assistants.map((e) => e.id).toSet();
-    for (final entry in assignmentKeys.entries) {
-      final current = Boxes.prefs.get(entry.value) as String?;
-      if (current == null || !ids.contains(current)) {
-        final fallback = ids.contains(entry.key) ? entry.key : assistants.first.id;
-        await Boxes.prefs.put(entry.value, fallback);
-      }
+      case 'quick':
+        return AssistantModel(
+          id: 'quick',
+          name: '快速助手',
+          prompt: '请提供简洁、直接的回答。重点突出关键信息，避免冗长的解释。',
+          type: 'built_in',
+          emoji: '⚡',
+          description: '快速回答，适合需要简洁回复的场景',
+          createdAt: now,
+          updatedAt: now,
+        );
+      case 'translate':
+        return AssistantModel(
+          id: 'translate',
+          name: '翻译助手',
+          prompt: '你是一个专业的翻译助手。请准确、自然地在不同语言之间进行翻译，保持原文的语义和语调。',
+          type: 'built_in',
+          emoji: '🌐',
+          description: '专业翻译，支持多语言互译',
+          createdAt: now,
+          updatedAt: now,
+        );
+      default:
+        throw ArgumentError('Unknown built-in assistant id: $id');
     }
   }
 
-  Future<void> assign(String role, String assistantId) async {
-    final key = assignmentKeys[role];
-    if (key == null) return;
-    await Boxes.prefs.put(key, assistantId);
+  // 从JSON导入助手
+  Future<AssistantModel> importAssistantFromJson(Map<String, dynamic> json) async {
+    try {
+      final assistant = AssistantModel.fromJson(json);
+      final box = HiveBoxes.getAssistantsBox();
+      await box.put(assistant.id, assistant);
+      return assistant;
+    } catch (e) {
+      throw Exception('Failed to import assistant: $e');
+    }
+  }
+
+  // 导出助手为JSON
+  Map<String, dynamic> exportAssistantToJson(String id) {
+    final assistant = getAssistantById(id);
+    if (assistant == null) {
+      throw Exception('Assistant not found: $id');
+    }
+    return assistant.toJson();
+  }
+
+  // 搜索助手
+  List<AssistantModel> searchAssistants(String query) {
+    final assistants = getAllAssistants();
+    final lowerQuery = query.toLowerCase();
+    
+    return assistants.where((assistant) {
+      return assistant.name.toLowerCase().contains(lowerQuery) ||
+             (assistant.description?.toLowerCase().contains(lowerQuery) ?? false) ||
+             (assistant.group?.toLowerCase().contains(lowerQuery) ?? false);
+    }).toList();
   }
 }
-final assistantServiceProvider = Provider<AssistantService>((ref) => AssistantService());
-
-final assistantsProvider = FutureProvider<List<Assistant>>((ref) async {
-  return ref.read(assistantServiceProvider).getAssistants();
-});

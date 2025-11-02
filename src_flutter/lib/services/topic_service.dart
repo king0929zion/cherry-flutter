@@ -1,161 +1,153 @@
-import 'dart:async';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:uuid/uuid.dart';
 import '../data/boxes.dart';
-import '../utils/ids.dart';
-import 'prefs_service.dart';
-
-class Topic {
-  final String id;
-  final String assistantId;
-  final String name;
-  final int createdAt;
-  final int updatedAt;
-  final bool isLoading;
-
-  Topic({
-    required this.id,
-    required this.assistantId,
-    required this.name,
-    required this.createdAt,
-    required this.updatedAt,
-    this.isLoading = false,
-  });
-
-  Topic copyWith({String? name, bool? isLoading, int? updatedAt}) => Topic(
-        id: id,
-        assistantId: assistantId,
-        name: name ?? this.name,
-        createdAt: createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-        isLoading: isLoading ?? this.isLoading,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'assistantId': assistantId,
-        'name': name,
-        'createdAt': createdAt,
-        'updatedAt': updatedAt,
-        'isLoading': isLoading,
-      };
-
-  static Topic fromJson(Map<dynamic, dynamic> json) => Topic(
-        id: json['id'] as String,
-        assistantId: json['assistantId'] as String,
-        name: json['name'] as String,
-        createdAt: (json['createdAt'] as num).toInt(),
-        updatedAt: (json['updatedAt'] as num).toInt(),
-        isLoading: (json['isLoading'] as bool?) ?? false,
-      );
-}
+import '../models/topic.dart';
 
 class TopicService {
-  final _listeners = <void Function()>{};
-  final PrefsService _prefs;
+  static final TopicService _instance = TopicService._internal();
+  factory TopicService() => _instance;
+  TopicService._internal();
 
-  TopicService(this._prefs);
+  final _uuid = const Uuid();
 
-  Future<Topic> ensureDefaultTopic() async {
-    final currentId = _prefs.getCurrentTopicId();
-    if (currentId != null) {
-      final existing = await getTopicById(currentId);
-      if (existing != null) return existing;
-    }
-
-    final topic = Topic(
-      id: newId(),
-      assistantId: 'default',
-      name: '新主题',
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-      updatedAt: DateTime.now().millisecondsSinceEpoch,
-    );
-    await Boxes.topics.put(topic.id, topic.toJson());
-    await _prefs.setCurrentTopicId(topic.id);
-    _notify();
-    return topic;
-  }
-
-  Future<Topic?> getTopicById(String id) async {
-    final raw = Boxes.topics.get(id) as Map?;
-    return raw == null ? null : Topic.fromJson(raw);
-  }
-
-  Future<List<Topic>> getTopics() async {
-    return Boxes.topics.values.map((e) => Topic.fromJson(e as Map)).toList()
+  // 获取所有话题
+  List<TopicModel> getAllTopics() {
+    final box = HiveBoxes.getTopicsBox();
+    return box.values.toList()
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   }
 
-  Future<Topic> createTopic({String assistantId = 'default', String name = '新主题'}) async {
-    final topic = Topic(
-      id: newId(),
+  // 根据ID获取话题
+  TopicModel? getTopicById(String id) {
+    final box = HiveBoxes.getTopicsBox();
+    return box.get(id);
+  }
+
+  // 创建新话题
+  Future<TopicModel> createTopic({
+    required String assistantId,
+    required String name,
+  }) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final topic = TopicModel(
+      id: _uuid.v4(),
       assistantId: assistantId,
       name: name,
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-      updatedAt: DateTime.now().millisecondsSinceEpoch,
+      createdAt: now,
+      updatedAt: now,
     );
-    await Boxes.topics.put(topic.id, topic.toJson());
-    await _prefs.setCurrentTopicId(topic.id);
-    _notify();
+
+    final box = HiveBoxes.getTopicsBox();
+    await box.put(topic.id, topic);
     return topic;
   }
 
-  Future<void> renameTopic(String id, String name) async {
-    final topic = await getTopicById(id);
-    if (topic == null) return;
-    final updated = topic.copyWith(
-      name: name,
-      updatedAt: DateTime.now().millisecondsSinceEpoch,
-    );
-    await Boxes.topics.put(id, updated.toJson());
-    _notify();
+  // 更新话题
+  Future<void> updateTopic(String id, {
+    String? name,
+    String? assistantId,
+    bool? isLoading,
+  }) async {
+    final box = HiveBoxes.getTopicsBox();
+    final topic = box.get(id);
+    if (topic != null) {
+      final updatedTopic = topic.copyWith(
+        name: name,
+        assistantId: assistantId,
+        isLoading: isLoading,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      );
+      await box.put(id, updatedTopic);
+    }
   }
 
+  // 删除话题
   Future<void> deleteTopic(String id) async {
-    await Boxes.topics.delete(id);
-    final toDelete = Boxes.messages.keys.where((key) {
-      final entry = Boxes.messages.get(key) as Map?;
-      return entry != null && entry['topicId'] == id;
-    }).toList();
-    for (final key in toDelete) {
-      await Boxes.messages.delete(key);
+    final box = HiveBoxes.getTopicsBox();
+    await box.delete(id);
+    
+    // 同时删除相关的消息
+    final messageBox = HiveBoxes.getMessagesBox();
+    final messages = messageBox.values.where((m) => m.topicId == id).toList();
+    for (final message in messages) {
+      await messageBox.delete(message.id);
     }
-    if (_prefs.getCurrentTopicId() == id) {
-      await ensureDefaultTopic();
+    
+    // 删除相关的消息块
+    final blockBox = HiveBoxes.getMessageBlocksBox();
+    for (final message in messages) {
+      final blocks = blockBox.values.where((b) => b.messageId == message.id).toList();
+      for (final block in blocks) {
+        await blockBox.delete(block.id);
+      }
     }
-    _notify();
   }
 
-  String? get currentTopicId => _prefs.getCurrentTopicId();
-  Future<void> setCurrentTopic(String id) => _prefs.setCurrentTopicId(id);
-
-  void addListener(void Function() cb) => _listeners.add(cb);
-  void removeListener(void Function() cb) => _listeners.remove(cb);
-
-  void _notify() {
-    for (final listener in _listeners) {
-      listener();
+  // 获取或创建默认话题
+  Future<TopicModel> ensureDefaultTopic() async {
+    const defaultId = 'default';
+    final box = HiveBoxes.getTopicsBox();
+    
+    TopicModel? defaultTopic = box.get(defaultId);
+    if (defaultTopic == null) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      defaultTopic = TopicModel(
+        id: defaultId,
+        assistantId: 'default',
+        name: '默认对话',
+        createdAt: now,
+        updatedAt: now,
+      );
+      await box.put(defaultTopic.id, defaultTopic);
     }
+    
+    return defaultTopic;
+  }
+
+  // 搜索话题
+  List<TopicModel> searchTopics(String query) {
+    final topics = getAllTopics();
+    final lowerQuery = query.toLowerCase();
+    
+    return topics.where((topic) {
+      return topic.name.toLowerCase().contains(lowerQuery);
+    }).toList();
+  }
+
+  // 获取最近的话题
+  List<TopicModel> getRecentTopics({int limit = 10}) {
+    final topics = getAllTopics();
+    return topics.take(limit).toList();
+  }
+
+  // 更新话题的最后更新时间
+  Future<void> updateTopicTimestamp(String id) async {
+    final box = HiveBoxes.getTopicsBox();
+    final topic = box.get(id);
+    if (topic != null) {
+      final updatedTopic = topic.copyWith(
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      );
+      await box.put(id, updatedTopic);
+    }
+  }
+
+  // 获取话题的消息数量
+  int getMessageCount(String topicId) {
+    final messageBox = HiveBoxes.getMessagesBox();
+    return messageBox.values.where((m) => m.topicId == topicId).length;
+  }
+
+  // 批量删除话题
+  Future<void> deleteTopics(List<String> ids) async {
+    for (final id in ids) {
+      await deleteTopic(id);
+    }
+  }
+
+  // 清空所有话题
+  Future<void> clearAllTopics() async {
+    final topics = getAllTopics();
+    final topicIds = topics.map((t) => t.id).toList();
+    await deleteTopics(topicIds);
   }
 }
-
-final topicServiceProvider = Provider<TopicService>((ref) => TopicService(prefsService));
-
-final topicsProvider = StreamProvider<List<Topic>>((ref) async* {
-    final svc = ref.read(topicServiceProvider);
-    final controller = StreamController<List<Topic>>();
-    Future<void> push() async => controller.add(await svc.getTopics());
-    svc.addListener(push);
-    ref.onDispose(() {
-      svc.removeListener(push);
-      controller.close();
-    });
-    await push();
-    yield* controller.stream;
-  });
-
-final currentTopicProvider = FutureProvider<Topic>((ref) async {
-  final svc = ref.read(topicServiceProvider);
-  return svc.ensureDefaultTopic();
-});
