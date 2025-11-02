@@ -89,7 +89,7 @@ class McpScreen extends ConsumerWidget {
               child: Icon(
                 Icons.cloud_outlined,
                 size: 40,
-                color: isDark ? Tokens.blueDark : Tokens.blue,
+                color: isDark ? Tokens.blueDark100 : Tokens.blue100,
               ),
             ),
             const SizedBox(height: 16),
@@ -255,16 +255,16 @@ class _McpServerCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       color: server.isActive
-                          ? isDark ? Tokens.greenDark20 : Tokens.green10
-                          : isDark ? Tokens.greyDark20 : Tokens.grey10,
+                          ? (isDark ? Tokens.greenDark20 : Tokens.green10)
+                          : (isDark ? Tokens.gray20 : Tokens.gray10),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
                       server.isActive ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
                       size: 24,
                       color: server.isActive
-                          ? isDark ? Tokens.greenDark : Tokens.green
-                          : isDark ? Tokens.greyDark : Tokens.grey,
+                          ? (isDark ? Tokens.greenDark100 : Tokens.green100)
+                          : (isDark ? Tokens.gray80 : Tokens.gray60),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -302,7 +302,7 @@ class _McpServerCard extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  color: isDark ? Tokens.surfaceDark : Tokens.surfaceLight,
+                  color: isDark ? Tokens.cardDark : Tokens.cardLight,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,7 +325,7 @@ class _McpServerCard extends StatelessWidget {
                           child: Text(
                             _getServerTypeDisplayName(server.type),
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: isDark ? Tokens.blueDark : Tokens.blue,
+                              color: isDark ? Tokens.blueDark100 : Tokens.blue100,
                               fontSize: 10,
                             ),
                           ),

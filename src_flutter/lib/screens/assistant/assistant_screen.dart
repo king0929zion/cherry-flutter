@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../services/assistant_service.dart';
+import '../../models/assistant.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/emoji_avatar.dart';
 import '../../widgets/loading_indicator.dart';
@@ -17,7 +18,7 @@ class AssistantScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final assistants = ref.watch(assistantsProvider);
+    final assistants = ref.watch(assistantNotifierProvider);
     final svc = ref.read(assistantServiceProvider);
     
     return Scaffold(
@@ -28,8 +29,10 @@ class AssistantScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () async {
-              await svc.createAssistant();
-              ref.invalidate(assistantsProvider);
+              await ref.read(assistantNotifierProvider.notifier).createAssistant(
+                    name: '新助手',
+                    prompt: '',
+                  );
             },
           ),
         ],
@@ -43,8 +46,10 @@ class AssistantScreen extends ConsumerWidget {
               description: '创建你的第一个 AI 助手',
               actionLabel: '创建助手',
               onAction: () async {
-                await svc.createAssistant();
-                ref.invalidate(assistantsProvider);
+                await ref.read(assistantNotifierProvider.notifier).createAssistant(
+                      name: '新助手',
+                      prompt: '',
+                    );
               },
             );
           }
@@ -68,7 +73,7 @@ class AssistantScreen extends ConsumerWidget {
         error: (e, _) => ErrorView(
           message: '加载助手失败',
           details: e.toString(),
-          onRetry: () => ref.invalidate(assistantsProvider),
+          onRetry: () => ref.invalidate(assistantNotifierProvider),
         ),
       ),
     );
@@ -77,7 +82,7 @@ class AssistantScreen extends ConsumerWidget {
 
 /// AssistantCard - 助手卡片组件
 class _AssistantCard extends StatelessWidget {
-  final dynamic assistant;
+  final AssistantModel assistant;
   final VoidCallback onTap;
 
   const _AssistantCard({

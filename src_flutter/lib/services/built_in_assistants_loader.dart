@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
 
-import '../services/assistant_service.dart';
+import '../models/assistant.dart';
 
 class BuiltInAssistantsLoader {
   static const _zhAsset = 'assets/data/assistants-zh.json';

@@ -1,7 +1,5 @@
 import 'package:hive/hive.dart';
 
-part 'message_block.g.dart';
-
 // 消息块类型枚举
 @HiveType(typeId: 10)
 enum MessageBlockType {

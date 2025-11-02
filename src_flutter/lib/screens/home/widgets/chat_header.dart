@@ -69,7 +69,10 @@ class ChatHeader extends ConsumerWidget implements PreferredSizeWidget {
               icon: const Icon(Icons.add_comment_outlined, size: 24),
               padding: EdgeInsets.zero,
               onPressed: () async {
-                final t = await ref.read(topicServiceProvider).createTopic();
+                final t = await ref.read(topicServiceProvider).createTopic(
+                      assistantId: 'default',
+                      name: '新对话',
+                    );
                 if (context.mounted) context.go('/home/chat/${t.id}');
               },
               tooltip: '新建主题', // TODO: i18n

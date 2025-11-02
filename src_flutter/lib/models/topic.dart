@@ -1,7 +1,5 @@
 import 'package:hive/hive.dart';
 
-part 'topic.g.dart';
-
 @HiveType(typeId: 1)
 class TopicModel extends HiveObject {
   @HiveField(0)
@@ -25,4 +23,25 @@ class TopicModel extends HiveObject {
     required this.updatedAt,
     this.isLoading = false,
   });
+
+  TopicModel copyWith({
+    String? id,
+    String? assistantId,
+    String? name,
+    int? createdAt,
+    int? updatedAt,
+    bool? isLoading,
+  }) {
+    return TopicModel(
+      id: id ?? this.id,
+      assistantId: assistantId ?? this.assistantId,
+      name: name ?? this.name,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isLoading: isLoading ?? this.isLoading,
+    );
+  }
 }
+
+// Backward-compat alias
+typedef Topic = TopicModel;

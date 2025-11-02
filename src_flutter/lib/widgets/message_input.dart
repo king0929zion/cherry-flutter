@@ -3,15 +3,16 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../models/attachment.dart';
+import '../models/models.dart';
 import '../services/assistant_service.dart';
 import '../services/topic_service.dart';
 import '../theme/tokens.dart';
 import '../ui/cherry_icons.dart';
 
 class MessageInput extends StatefulWidget {
-  final Topic topic;
-  final Assistant assistant;
-  final List<Assistant> assistants;
+  final TopicModel topic;
+  final AssistantModel assistant;
+  final List<AssistantModel> assistants;
   final Future<void> Function(
     String text,
     List<PickedAttachment> attachments,
@@ -64,7 +65,7 @@ class _MessageInputState extends State<MessageInput> {
     super.dispose();
   }
 
-  Assistant? _findAssistant(String id) {
+  AssistantModel? _findAssistant(String id) {
     try {
       return widget.assistants.firstWhere((a) => a.id == id);
     } catch (_) {
@@ -120,7 +121,7 @@ class _MessageInputState extends State<MessageInput> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         const SnackBar(
-          content: Text('璇ュ姛鑳芥殏鏈疄鐜帮紝鏁鏈熷緟'),
+          content: Text('该功能尚未实现，敬请期待'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -160,7 +161,7 @@ class _MessageInputState extends State<MessageInput> {
         isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05);
 
     final selectedAssistants =
-        _selectedMentions.map(_findAssistant).whereType<Assistant>().toList();
+        _selectedMentions.map(_findAssistant).whereType<AssistantModel>().toList();
     final actionItems = <Widget>[];
     void addAction(Widget widget) {
       if (actionItems.isNotEmpty) {
@@ -176,7 +177,7 @@ class _MessageInputState extends State<MessageInput> {
           color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
         ),
         onTap: _pickFiles,
-        semanticLabel: '娣诲姞闄勪欢',
+        semanticLabel: '添加附件',
       ),
     );
     addAction(
@@ -186,7 +187,7 @@ class _MessageInputState extends State<MessageInput> {
           color: isDark ? Tokens.greenDark100 : Tokens.green100,
         ),
         onTap: _showComingSoon,
-        semanticLabel: '鎬濊€冩ā寮?,
+        semanticLabel: '智能模式',
       ),
     );
     addAction(
@@ -267,7 +268,7 @@ class _MessageInputState extends State<MessageInput> {
                   onChanged: (_) => setState(() {}),
                   style: theme.textTheme.bodyLarge?.copyWith(height: 1.4),
                   decoration: InputDecoration(
-                    hintText: '鍙戦€佹秷鎭?..',
+                    hintText: '发送消息...',
                     hintStyle: theme.textTheme.bodyMedium?.copyWith(
                       color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
                     ),
@@ -316,8 +317,9 @@ class _MessageInputState extends State<MessageInput> {
       ),
     );
   }
+}
 
-  class _ToolButton extends StatelessWidget {
+class _ToolButton extends StatelessWidget {
   final Widget icon;
   final VoidCallback? onTap;
   final String semanticLabel;
@@ -364,7 +366,7 @@ class _MessageInputState extends State<MessageInput> {
 
 class _MentionPill extends StatelessWidget {
   final VoidCallback onTap;
-  final List<Assistant> assistants;
+  final List<AssistantModel> assistants;
 
   const _MentionPill({
     required this.onTap,
@@ -575,7 +577,7 @@ class _AttachmentChip extends StatelessWidget {
 }
 
 class _MentionSelector extends StatefulWidget {
-  final List<Assistant> assistants;
+  final List<AssistantModel> assistants;
   final Set<String> initialSelection;
 
   const _MentionSelector({
@@ -621,7 +623,7 @@ class _MentionSelectorState extends State<_MentionSelector> {
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              '閫夋嫨瑕?@ 鐨勫姪鎵?,
+              '选择要 @ 的助手',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -664,7 +666,7 @@ class _MentionSelectorState extends State<_MentionSelector> {
                     ),
                     child: Row(
                       children: [
-                        Text(item.emoji ?? '馃', style: const TextStyle(fontSize: 20)),
+                        Text(item.emoji ?? '🤖', style: const TextStyle(fontSize: 20)),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -691,7 +693,7 @@ class _MentionSelectorState extends State<_MentionSelector> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context, widget.initialSelection.toList()),
-                  child: const Text('鍙栨秷'),
+                  child: const Text('取消'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -700,7 +702,7 @@ class _MentionSelectorState extends State<_MentionSelector> {
                   onPressed: _selection.isEmpty
                       ? null
                       : () => Navigator.pop(context, _selection.toList()),
-                  child: const Text('瀹屾垚'),
+                  child: const Text('完成'),
                 ),
               ),
             ],

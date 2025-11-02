@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../services/topic_service.dart';
 import '../../services/assistant_service.dart';
+import '../../models/topic.dart';
+import '../../models/assistant.dart';
 import '../../widgets/topic_item.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/loading_indicator.dart';
@@ -27,7 +29,7 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
     super.dispose();
   }
 
-  List<Topic> _filter(List<Topic> topics) {
+  List<TopicModel> _filter(List<TopicModel> topics) {
     if (_query.trim().isEmpty) return topics;
     final term = _query.trim().toLowerCase();
     return topics
@@ -36,9 +38,9 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
         .toList();
   }
 
-  Map<String, List<Topic>> _groupByDate(List<Topic> topics) {
+  Map<String, List<TopicModel>> _groupByDate(List<TopicModel> topics) {
     final now = DateTime.now();
-    final groups = <String, List<Topic>>{
+    final groups = <String, List<TopicModel>>{
       '今天': [],
       '昨天': [],
       '本周': [],
@@ -46,7 +48,7 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
       '更早': [],
     };
 
-    void add(String key, Topic topic) {
+    void add(String key, TopicModel topic) {
       groups[key] ??= [];
       groups[key]!.add(topic);
     }
@@ -76,7 +78,6 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
     final topicsAsync = ref.watch(topicsProvider);
     final assistantsAsync = ref.watch(assistantsProvider);
     final topicService = ref.read(topicServiceProvider);
-    final activeTopicId = topicService.currentTopicId;
 
     return Scaffold(
       appBar: AppBar(
@@ -97,7 +98,7 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
           IconButton(
             icon: const Icon(Icons.add_comment_outlined),
             onPressed: () async {
-              final newTopic = await topicService.createTopic();
+              final newTopic = await topicService.createTopic(assistantId: 'default', name: '新对话');
               if (context.mounted) context.go('/home/chat/${newTopic.id}');
             },
           ),
@@ -110,7 +111,7 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
           details: error.toString(),
           onRetry: () => ref.invalidate(topicsProvider),
         ),
-        data: (topics) {
+            data: (topics) {
           final filtered = _filter(topics);
           if (filtered.isEmpty) {
             if (_query.isEmpty) {
@@ -131,7 +132,7 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
           final grouped = _groupByDate(filtered);
           final assistants = assistantsAsync.maybeWhen(
             data: (list) => {for (final a in list) a.id: a},
-            orElse: () => <String, Assistant>{},
+            orElse: () => <String, AssistantModel>{},
           );
 
           final sections = grouped.entries.toList();
@@ -168,9 +169,8 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
                             assistantName: assistant?.name ?? '默认助手',
                             assistantEmoji: assistant?.emoji ?? '🤖',
                             updatedAt: topic.updatedAt,
-                            isActive: topic.id == activeTopicId,
+                            isActive: false,
                             onTap: () async {
-                              await topicService.setCurrentTopic(topic.id);
                               if (context.mounted) context.go('/home/chat/${topic.id}');
                             },
                             onRename: () => _renameTopic(context, topicService, topic),
@@ -191,7 +191,7 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
     );
   }
 
-  Future<void> _renameTopic(BuildContext context, TopicService service, Topic topic) async {
+  Future<void> _renameTopic(BuildContext context, TopicService service, TopicModel topic) async {
     final controller = TextEditingController(text: topic.name);
     final confirmed = await showDialog<bool>(
       context: context,
@@ -209,7 +209,7 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
       ),
     );
     if (confirmed == true) {
-      await service.renameTopic(topic.id, controller.text.trim());
+      await service.updateTopic(topic.id, name: controller.text.trim());
     }
   }
 

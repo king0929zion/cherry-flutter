@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/tokens.dart';
 import 'cherry_markdown.dart';
 import 'tool_call_block.dart';
-import '../models/tool_call.dart';
+import '../models/tool_call.dart' as model;
 
 class MessageBubble extends StatelessWidget {
   final String content;
@@ -12,7 +12,7 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback? onTranslate;
   final VoidCallback? onRegenerate;
   final VoidCallback? onDelete;
-  final List<ToolCallBlock>? toolCalls;
+  final List<model.ToolCallBlock>? toolCalls;
 
   const MessageBubble({
     super.key,

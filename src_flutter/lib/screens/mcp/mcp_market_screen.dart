@@ -303,7 +303,7 @@ class _ServerCategoryCard extends StatelessWidget {
                 child: Icon(
                   category.icon,
                   size: 28,
-                  color: isDark ? Tokens.blueDark : Tokens.blue,
+                  color: isDark ? Tokens.blueDark100 : Tokens.blue100,
                 ),
               ),
               const SizedBox(width: 16),

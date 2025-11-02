@@ -11,10 +11,12 @@ import '../../services/topic_service.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/message_input.dart';
 import '../../models/block.dart';
+import '../../models/assistant.dart';
+import '../../models/topic.dart';
 import 'widgets/attachment_tile.dart';
 import 'widgets/chat_header.dart';
 
-final topicDetailsProvider = FutureProvider.family<Topic, String>((ref, topicId) async {
+final topicDetailsProvider = FutureProvider.family<TopicModel, String>((ref, topicId) async {
   final svc = ref.read(topicServiceProvider);
   final topic = await svc.getTopicById(topicId);
   if (topic != null) return topic;
@@ -49,13 +51,22 @@ class ChatScreen extends ConsumerWidget {
       data: (topic) {
         final assistants = assistantsAsync.maybeWhen(
           data: (list) => list,
-          orElse: () => const <Assistant>[],
+          orElse: () => const <AssistantModel>[],
         );
-        Assistant currentAssistant;
+        AssistantModel currentAssistant;
         try {
           currentAssistant = assistants.firstWhere((a) => a.id == topic.assistantId);
         } catch (_) {
-          currentAssistant = const Assistant(id: 'default', name: '默认助手', emoji: '🤖');
+          currentAssistant = AssistantModel(
+            id: 'default',
+            name: '默认助手',
+            prompt: '',
+            type: 'built_in',
+            emoji: '🤖',
+            description: '默认助手',
+            createdAt: DateTime.now().millisecondsSinceEpoch,
+            updatedAt: DateTime.now().millisecondsSinceEpoch,
+          );
         }
 
         final assistantList = assistants.isEmpty ? [currentAssistant] : assistants;
@@ -85,12 +96,13 @@ class ChatScreen extends ConsumerWidget {
                     itemBuilder: (ctx, i) {
                       final m = list[i];
                       final isUser = m.role == 'user';
+                      final contentText = m.model ?? '';
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Column(
                           children: [
                             MessageBubble(
-                              content: m.content,
+                              content: contentText,
                               isUser: isUser,
                               onCopy: () async {
                                 await Clipboard.setData(ClipboardData(text: m.content));

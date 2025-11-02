@@ -1,7 +1,5 @@
 import 'package:hive/hive.dart';
 
-part 'assistant.g.dart';
-
 @HiveType(typeId: 2)
 class AssistantModel extends HiveObject {
   @HiveField(0)
@@ -167,3 +165,6 @@ class AssistantModel extends HiveObject {
     );
   }
 }
+
+// Backward-compat alias
+typedef Assistant = AssistantModel;

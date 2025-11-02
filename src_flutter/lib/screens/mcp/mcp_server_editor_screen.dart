@@ -72,7 +72,7 @@ class _McpServerEditorScreenState extends ConsumerState<McpServerEditorScreen> {
   String _formatHeaders(Map<String, String>? headers) {
     if (headers == null || headers.isEmpty) return '';
     try {
-      return const JsonEncoder.withIndent('  ').convert(headers);
+      return JsonEncoder.withIndent('  ').convert(headers);
     } catch (e) {
       return '';
     }
@@ -393,11 +393,11 @@ class _ServerTypeOption extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
-                ? isDark ? Tokens.greenDark : Tokens.green
+                ? (isDark ? Tokens.greenDark100 : Tokens.green100)
                 : isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
           ),
           color: isSelected
-              ? isDark ? Tokens.greenDark20 : Tokens.green10
+              ? (isDark ? Tokens.greenDark20 : Tokens.green10)
               : Colors.transparent,
         ),
         child: Column(
@@ -408,7 +408,7 @@ class _ServerTypeOption extends StatelessWidget {
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: isSelected
-                    ? isDark ? Tokens.greenDark : Tokens.green
+                    ? (isDark ? Tokens.greenDark100 : Tokens.green100)
                     : null,
               ),
             ),
@@ -493,7 +493,7 @@ class _TextFormField extends StatelessWidget {
               ),
             ),
             filled: true,
-            fillColor: isDark ? Tokens.surfaceDark : Tokens.surfaceLight,
+            fillColor: isDark ? Tokens.cardDark : Tokens.cardLight,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
           style: theme.textTheme.bodyMedium?.copyWith(

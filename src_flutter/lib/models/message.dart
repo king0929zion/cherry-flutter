@@ -1,7 +1,5 @@
 import 'package:hive/hive.dart';
 
-part 'message.g.dart';
-
 @HiveType(typeId: 3)
 class MessageModel extends HiveObject {
   @HiveField(0)

@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/tool_call.dart';
+import '../models/tool_call.dart' as model;
 import '../theme/tokens.dart';
 import '../utils/expandable_controller.dart';
 
-class ToolCallBlock extends ConsumerStatefulWidget {
-  final ToolCallBlock block;
+class ToolCallBlockView extends ConsumerStatefulWidget {
+  final model.ToolCallBlock block;
 
-  const ToolCallBlock({
+  const ToolCallBlockView({
     super.key,
     required this.block,
   });
 
   @override
-  ConsumerState<ToolCallBlock> createState() => _ToolCallBlockState();
+  ConsumerState<ToolCallBlockView> createState() => _ToolCallBlockViewState();
 }
 
-class _ToolCallBlockState extends ConsumerState<ToolCallBlock>
+class _ToolCallBlockViewState extends ConsumerState<ToolCallBlockView>
     with SingleTickerProviderStateMixin {
   late final ExpandableController _controller;
   bool _isExpanded = false;
@@ -125,26 +126,26 @@ class _ToolCallBlockState extends ConsumerState<ToolCallBlock>
     );
   }
 
-  Widget _buildStatusIcon(ToolCall toolCall, ThemeData theme, bool isDark) {
+  Widget _buildStatusIcon(model.ToolCall toolCall, ThemeData theme, bool isDark) {
     IconData icon;
     Color color;
 
     switch (toolCall.status) {
       case ToolCallStatus.pending:
         icon = Icons.hourglass_empty;
-        color = isDark ? Tokens.yellowDark : Tokens.yellow;
+        color = isDark ? Tokens.yellowDark100 : Tokens.yellow100;
         break;
       case ToolCallStatus.inProgress:
         icon = Icons.refresh;
-        color = isDark ? Tokens.blueDark : Tokens.blue;
+        color = isDark ? Tokens.blueDark100 : Tokens.blue100;
         break;
       case ToolCallStatus.done:
         icon = Icons.check_circle;
-        color = isDark ? Tokens.greenDark : Tokens.green;
+        color = isDark ? Tokens.greenDark100 : Tokens.green100;
         break;
       case ToolCallStatus.error:
         icon = Icons.error;
-        color = isDark ? Tokens.redDark : Tokens.red;
+        color = isDark ? Tokens.red100 : Tokens.red100;
         break;
     }
 
@@ -166,7 +167,7 @@ class _ToolCallBlockState extends ConsumerState<ToolCallBlock>
     );
   }
 
-  Widget _buildExpandedContent(ToolCall toolCall, ThemeData theme, bool isDark) {
+  Widget _buildExpandedContent(model.ToolCall toolCall, ThemeData theme, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -193,7 +194,7 @@ class _ToolCallBlockState extends ConsumerState<ToolCallBlock>
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: isDark ? Tokens.surfaceDark : Tokens.surfaceLight,
+                color: isDark ? Tokens.cardDark : Tokens.cardLight,
               ),
               child: Text(
                 _formatJson(toolCall.arguments),
@@ -220,15 +221,15 @@ class _ToolCallBlockState extends ConsumerState<ToolCallBlock>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 color: toolCall.error != null
-                    ? isDark ? Tokens.redDark20 : Tokens.red10
-                    : isDark ? Tokens.surfaceDark : Tokens.surfaceLight,
+                    ? (isDark ? Tokens.red20 : Tokens.red10)
+                    : (isDark ? Tokens.cardDark : Tokens.cardLight),
               ),
               child: Text(
                 toolCall.error ?? _formatJson(toolCall.response),
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontFamily: 'monospace',
                   color: toolCall.error != null
-                      ? isDark ? Tokens.redDark : Tokens.red
+                      ? (isDark ? Tokens.red100 : Tokens.red100)
                       : null,
                 ),
               ),
@@ -268,22 +269,22 @@ class _ToolCallBlockState extends ConsumerState<ToolCallBlock>
     return name;
   }
 
-  String _getStatusText(ToolCallStatus status) {
+  String _getStatusText(model.ToolCallStatus status) {
     switch (status) {
-      case ToolCallStatus.pending:
+      case model.ToolCallStatus.pending:
         return '等待中';
-      case ToolCallStatus.inProgress:
+      case model.ToolCallStatus.inProgress:
         return '执行中';
-      case ToolCallStatus.done:
+      case model.ToolCallStatus.done:
         return '已完成';
-      case ToolCallStatus.error:
+      case model.ToolCallStatus.error:
         return '执行失败';
     }
   }
 
   String _formatJson(dynamic json) {
     try {
-      return const JsonEncoder.withIndent('  ').convert(json);
+      return JsonEncoder.withIndent('  ').convert(json);
     } catch (e) {
       return json.toString();
     }
@@ -297,7 +298,7 @@ class _ToolCallBlockState extends ConsumerState<ToolCallBlock>
 }
 
 class ToolCallList extends StatelessWidget {
-  final List<ToolCallBlock> toolCalls;
+  final List<model.ToolCallBlock> toolCalls;
 
   const ToolCallList({
     super.key,
@@ -316,7 +317,7 @@ class ToolCallList extends StatelessWidget {
         const SizedBox(height: 12),
         ...toolCalls.map((toolCall) => Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: ToolCallBlock(block: toolCall),
+          child: ToolCallBlockView(block: toolCall),
         )),
       ],
     );

@@ -497,7 +497,7 @@ class _ModelCard extends StatelessWidget {
                     child: Text(
                       model.providerName,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: isDark ? Tokens.greenDark : Tokens.green,
+                        color: isDark ? Tokens.greenDark100 : Tokens.green100,
                         fontWeight: FontWeight.w500,
                         fontSize: 10,
                       ),

@@ -14,7 +14,7 @@ class CancelToken {
 class LlmService {
   const LlmService();
 
-  Future<String> complete({required List<ChatMessage> context, required ProviderSettings cfg}) async {
+  Future<String> complete({required List<dynamic> context, required ProviderSettings cfg}) async {
     if (cfg.apiKey.isEmpty) {
       final prompt = context.isEmpty ? '' : context.last.content;
       return prompt.isEmpty ? '（模拟回复）' : '（模拟回复）' + prompt;
@@ -46,7 +46,7 @@ class LlmService {
   }
 
   Future<void> streamComplete({
-    required List<ChatMessage> context,
+    required List<dynamic> context,
     required ProviderSettings cfg,
     required void Function(String delta) onDelta,
     CancelToken? cancelToken,

@@ -1,8 +1,4 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'model.g.dart';
-
-@JsonSerializable()
+// Manual JSON serialization, no code generation required
 class AIModel {
   final String id;
   final String name;
@@ -28,8 +24,35 @@ class AIModel {
     this.isAvailable = true,
   });
 
-  factory AIModel.fromJson(Map<String, dynamic> json) => _$AIModelFromJson(json);
-  Map<String, dynamic> toJson() => _$AIModelToJson(this);
+  factory AIModel.fromJson(Map<String, dynamic> json) {
+    return AIModel(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      provider: json['provider'] as String,
+      description: (json['description'] as String?) ?? '',
+      contextLength: (json['contextLength'] as int?) ?? (json['context_length'] as int?) ?? 4096,
+      maxTokens: (json['maxTokens'] as int?) ?? (json['max_tokens'] as int?) ?? 4096,
+      inputPrice: (json['inputPrice'] as num?)?.toDouble() ?? (json['input_price'] as num?)?.toDouble() ?? 0.0,
+      outputPrice: (json['outputPrice'] as num?)?.toDouble() ?? (json['output_price'] as num?)?.toDouble() ?? 0.0,
+      capabilities: (json['capabilities'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      isAvailable: (json['isAvailable'] as bool?) ?? (json['is_available'] as bool?) ?? true,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'provider': provider,
+      'description': description,
+      'contextLength': contextLength,
+      'maxTokens': maxTokens,
+      'inputPrice': inputPrice,
+      'outputPrice': outputPrice,
+      'capabilities': capabilities,
+      'isAvailable': isAvailable,
+    };
+  }
 
   AIModel copyWith({
     String? id,

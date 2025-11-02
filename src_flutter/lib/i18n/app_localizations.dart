@@ -122,7 +122,6 @@ class AppLocalizations {
   String get recentTopics => _localizedValues[locale.languageCode]!['recentTopics']!;
   String get noTopics => _localizedValues[locale.languageCode]!['noTopics']!;
   String get generating => _localizedValues[locale.languageCode]!['generating']!;
-  String get cancel => _localizedValues[locale.languageCode]!['cancel']!;
   String get copied => _localizedValues[locale.languageCode]!['copied']!;
 
   // 助手
@@ -249,7 +248,6 @@ class AppLocalizations {
       'recentTopics': 'Recent Topics',
       'noTopics': 'No topics',
       'generating': 'Generating...',
-      'cancel': 'Cancel',
       'copied': 'Copied',
 
       // 助手
@@ -375,7 +373,6 @@ class AppLocalizations {
       'recentTopics': '最近主题',
       'noTopics': '暂无主题',
       'generating': '正在生成...',
-      'cancel': '取消',
       'copied': '已复制',
 
       // 助手

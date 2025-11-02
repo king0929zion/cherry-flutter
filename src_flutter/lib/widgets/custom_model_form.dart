@@ -302,7 +302,7 @@ class _CustomModelFormState extends ConsumerState<CustomModelForm> {
                                   }
                                 });
                               },
-                              backgroundColor: isDark ? Tokens.surfaceDark : Tokens.surfaceLight,
+                              backgroundColor: isDark ? Tokens.cardDark : Tokens.cardLight,
                               selectedColor: theme.colorScheme.primary.withOpacity(0.1),
                               checkmarkColor: theme.colorScheme.primary,
                               labelStyle: theme.textTheme.bodyMedium?.copyWith(
@@ -468,7 +468,7 @@ class _TextFormField extends StatelessWidget {
               ),
             ),
             filled: true,
-            fillColor: isDark ? Tokens.surfaceDark : Tokens.surfaceLight,
+            fillColor: isDark ? Tokens.cardDark : Tokens.cardLight,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
           style: theme.textTheme.bodyMedium?.copyWith(

@@ -157,14 +157,14 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
                                 : isDark ? Tokens.cardDark : Tokens.cardLight,
                             borderRadius: BorderRadius.circular(20),
                             border: _isMultiSelectMode
-                                ? Border.all(color: isDark ? Tokens.greenDark : Tokens.green)
+                                ? Border.all(color: isDark ? Tokens.greenDark100 : Tokens.green100)
                                 : null,
                           ),
                           child: Text(
                             '多选',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: _isMultiSelectMode
-                                  ? isDark ? Tokens.greenDark : Tokens.green
+                                  ? (isDark ? Tokens.greenDark100 : Tokens.green100)
                                   : isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
                               fontWeight: FontWeight.w500,
                             ),
@@ -271,7 +271,7 @@ class _ModelTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
-                    ? isDark ? Tokens.greenDark : Tokens.green
+                    ? (isDark ? Tokens.greenDark100 : Tokens.green100)
                     : Colors.transparent,
                 width: 1,
               ),
@@ -293,7 +293,7 @@ class _ModelTile extends StatelessWidget {
                   child: Icon(
                     getModelOrProviderIcon(model.id, model.provider, isDark),
                     size: 16,
-                    color: isDark ? Tokens.blueDark : Tokens.blue,
+                    color: isDark ? Tokens.blueDark100 : Tokens.blue100,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -307,8 +307,8 @@ class _ModelTile extends StatelessWidget {
                         model.name,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w500,
-                          color: isSelected
-                              ? isDark ? Tokens.greenDark : Tokens.green
+                              color: isSelected
+                              ? (isDark ? Tokens.greenDark100 : Tokens.green100)
                               : isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
                         ),
                         maxLines: 1,
@@ -338,7 +338,7 @@ class _ModelTile extends StatelessWidget {
                         child: Text(
                           '长上下文',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: isDark ? Tokens.blueDark : Tokens.blue,
+                            color: isDark ? Tokens.blueDark100 : Tokens.blue100,
                             fontSize: 10,
                           ),
                         ),
@@ -348,13 +348,13 @@ class _ModelTile extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: isDark ? Tokens.purpleDark20 : Tokens.purple10,
+                          color: isDark ? Tokens.purpleDark20 : Tokens.purple20,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           '视觉',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: isDark ? Tokens.purpleDark : Tokens.purple,
+                            color: isDark ? Tokens.purpleDark100 : Tokens.purple100,
                             fontSize: 10,
                           ),
                         ),
@@ -367,7 +367,7 @@ class _ModelTile extends StatelessWidget {
                       Icon(
                         Icons.check_circle,
                         size: 20,
-                        color: isDark ? Tokens.greenDark : Tokens.green,
+                        color: isDark ? Tokens.greenDark100 : Tokens.green100,
                       ),
                     ],
                   ],
@@ -407,7 +407,7 @@ class _EmptyModelView extends StatelessWidget {
               child: Icon(
                 Icons.smart_toy_outlined,
                 size: 40,
-                color: isDark ? Tokens.blueDark : Tokens.blue,
+                color: isDark ? Tokens.blueDark100 : Tokens.blue100,
               ),
             ),
             const SizedBox(height: 16),
