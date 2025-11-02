@@ -11,6 +11,7 @@ import 'screens/settings/settings_screen.dart';
 import 'screens/settings/general_settings_screen.dart';
 import 'screens/settings/assistant_settings_screen.dart';
 import 'screens/settings/providers_settings_screen.dart';
+import 'screens/settings/model_settings_screen.dart';
 import 'screens/settings/datasource_settings_screen.dart';
 import 'screens/settings/websearch_settings_screen.dart';
 import 'screens/settings/about/about_screen.dart';
@@ -19,6 +20,8 @@ import 'screens/assistant/assistant_screen.dart';
 import 'screens/assistant/assistant_market_screen.dart';
 import 'screens/assistant/assistant_detail_screen.dart';
 import 'screens/mcp/mcp_screen.dart';
+import 'screens/mcp/mcp_market_screen.dart';
+import 'screens/mcp/mcp_server_editor_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
@@ -57,6 +60,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(path: 'general', builder: (ctx, st) => const GeneralSettingsScreen()),
               GoRoute(path: 'assistant', builder: (ctx, st) => const AssistantSettingsScreen()),
               GoRoute(path: 'providers', builder: (ctx, st) => const ProvidersSettingsScreen()),
+              GoRoute(path: 'models', builder: (ctx, st) => const ModelSettingsScreen()),
               GoRoute(path: 'data-sources', builder: (ctx, st) => const DataSourceSettingsScreen()),
               GoRoute(path: 'web-search', builder: (ctx, st) => const WebSearchSettingsScreen()),
               GoRoute(path: 'about', builder: (ctx, st) => const AboutScreen()),
@@ -69,7 +73,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/assistant/:assistantId',
             builder: (ctx, st) => AssistantDetailScreen(assistantId: st.pathParameters['assistantId']!),
           ),
-          GoRoute(path: '/mcp', builder: (ctx, st) => const McpScreen()),
+          GoRoute(
+            path: '/mcp',
+            builder: (ctx, st) => const McpScreen(),
+            routes: [
+              GoRoute(
+                path: '/market',
+                builder: (ctx, st) => const McpMarketScreen(),
+              ),
+              GoRoute(
+                path: '/editor/:serverId?',
+                builder: (ctx, st) => McpServerEditorScreen(
+                  serverId: st.pathParameters['serverId'],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     ],

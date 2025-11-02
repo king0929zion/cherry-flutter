@@ -12,11 +12,12 @@ class CancelToken {
 }
 
 class LlmService {
-  LlmService();
+  const LlmService();
 
   Future<String> complete({required List<ChatMessage> context, required ProviderSettings cfg}) async {
     if (cfg.apiKey.isEmpty) {
-      throw StateError('请先在设置中配置 OpenAI API Key');
+      final prompt = context.isEmpty ? '' : context.last.content;
+      return prompt.isEmpty ? '（模拟回复）' : '（模拟回复）' + prompt;
     }
 
     final uri = Uri.parse('${cfg.baseUrl}/chat/completions');
@@ -51,7 +52,15 @@ class LlmService {
     CancelToken? cancelToken,
   }) async {
     if (cfg.apiKey.isEmpty) {
-      throw StateError('请先在设置中配置 OpenAI API Key');
+      final prompt = context.isEmpty ? '...' : context.last.content;
+      final simulated = '（模拟回复）' + prompt;
+      for (final chunk in simulated.split(RegExp(r'(?<=。|！|？|,|，|\s)'))) {
+        if (cancelToken?.canceled == true) break;
+        if (chunk.trim().isEmpty) continue;
+        await Future.delayed(const Duration(milliseconds: 80));
+        onDelta(chunk);
+      }
+      return;
     }
 
     final uri = Uri.parse('${cfg.baseUrl}/chat/completions');
@@ -80,10 +89,9 @@ class LlmService {
       await for (final chunk in utf8Stream) {
         if (cancelToken?.canceled == true) break;
         for (final line in chunk.split('\n')) {
-          final s = line.trim();
-          if (s.isEmpty) continue;
-          if (!s.startsWith('data:')) continue;
-          final payload = s.substring(5).trim();
+          final trimmed = line.trim();
+          if (trimmed.isEmpty || !trimmed.startsWith('data:')) continue;
+          final payload = trimmed.substring(5).trim();
           if (payload == '[DONE]') return;
           try {
             final map = jsonDecode(payload) as Map<String, dynamic>;
@@ -94,7 +102,7 @@ class LlmService {
               if (text.isNotEmpty) onDelta(text);
             }
           } catch (_) {
-            // ignore parse errors of incomplete lines
+            // ignore partial JSON chunks
           }
         }
       }
@@ -104,4 +112,4 @@ class LlmService {
   }
 }
 
-final llmServiceProvider = Provider<LlmService>((ref) => LlmService());
+final llmServiceProvider = Provider<LlmService>((ref) => const LlmService());

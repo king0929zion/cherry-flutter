@@ -1,19 +1,30 @@
 import 'dart:math';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../models/attachment.dart';
+import '../services/assistant_service.dart';
+import '../services/topic_service.dart';
 import '../theme/tokens.dart';
 import '../ui/cherry_icons.dart';
 
 class MessageInput extends StatefulWidget {
-  final Future<void> Function(String text, List<PickedAttachment> attachments) onSubmit;
+  final Topic topic;
+  final Assistant assistant;
+  final List<Assistant> assistants;
+  final Future<void> Function(
+    String text,
+    List<PickedAttachment> attachments,
+    List<String> mentions,
+  ) onSubmit;
   final bool isSending;
   final VoidCallback? onPause;
 
   const MessageInput({
     super.key,
+    required this.topic,
+    required this.assistant,
+    required this.assistants,
     required this.onSubmit,
     this.isSending = false,
     this.onPause,
@@ -27,15 +38,38 @@ class _MessageInputState extends State<MessageInput> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   final List<PickedAttachment> _attachments = [];
+  late List<String> _selectedMentions;
   bool _localSending = false;
 
   bool get _isSending => widget.isSending || _localSending;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedMentions = [widget.assistant.id];
+  }
+
+  @override
+  void didUpdateWidget(covariant MessageInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.assistant.id != widget.assistant.id) {
+      _selectedMentions = [widget.assistant.id];
+    }
+  }
 
   @override
   void dispose() {
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  Assistant? _findAssistant(String id) {
+    try {
+      return widget.assistants.firstWhere((a) => a.id == id);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _pickFiles() async {
@@ -65,7 +99,11 @@ class _MessageInputState extends State<MessageInput> {
 
     setState(() => _localSending = true);
     try {
-      await widget.onSubmit(text, List.unmodifiable(_attachments));
+      await widget.onSubmit(
+        text,
+        List.unmodifiable(_attachments),
+        List.unmodifiable(_selectedMentions),
+      );
       _controller.clear();
       _attachments.clear();
     } finally {
@@ -82,10 +120,29 @@ class _MessageInputState extends State<MessageInput> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         const SnackBar(
-          content: Text('该功能暂未实现，敬请期待'),
+          content: Text('璇ュ姛鑳芥殏鏈疄鐜帮紝鏁鏈熷緟'),
           duration: Duration(seconds: 2),
         ),
       );
+  }
+
+  Future<void> _selectMentions() async {
+    final current = Set<String>.from(_selectedMentions);
+    final result = await showModalBottomSheet<List<String>>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return _MentionSelector(
+          assistants: widget.assistants,
+          initialSelection: current,
+        );
+      },
+    );
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        _selectedMentions = result;
+      });
+    }
   }
 
   @override
@@ -93,32 +150,81 @@ class _MessageInputState extends State<MessageInput> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final bottomInset = MediaQuery.of(context).padding.bottom;
-    final containerPadding = max(bottomInset, 12.0);
+    final platform = Theme.of(context).platform;
+    final extraBottom = platform == TargetPlatform.android ? 8.0 : 0.0;
+    final paddingBottom = max(bottomInset + extraBottom, 12.0);
     final canSend = _controller.text.trim().isNotEmpty || _attachments.isNotEmpty;
 
-    final containerColor = isDark ? const Color(0xFF181B1F) : Colors.white;
+    final containerColor = isDark ? const Color(0xFF171A1F) : Colors.white;
     final outlineColor =
-        isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.06);
+        isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05);
+
+    final selectedAssistants =
+        _selectedMentions.map(_findAssistant).whereType<Assistant>().toList();
+    final actionItems = <Widget>[];
+    void addAction(Widget widget) {
+      if (actionItems.isNotEmpty) {
+        actionItems.add(const SizedBox(width: 10));
+      }
+      actionItems.add(widget);
+    }
+
+    addAction(
+      _ToolButton(
+        icon: CherryIcons.assets(
+          size: 20,
+          color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+        ),
+        onTap: _pickFiles,
+        semanticLabel: '娣诲姞闄勪欢',
+      ),
+    );
+    addAction(
+      _ToolButton(
+        icon: CherryIcons.lightbulbOff(
+          size: 20,
+          color: isDark ? Tokens.greenDark100 : Tokens.green100,
+        ),
+        onTap: _showComingSoon,
+        semanticLabel: '鎬濊€冩ā寮?,
+      ),
+    );
+    addAction(
+      _MentionPill(
+        onTap: _selectMentions,
+        assistants: selectedAssistants,
+      ),
+    );
+    addAction(
+      _ToolButton(
+        icon: CherryIcons.mcp(
+          size: 20,
+          color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+        ),
+        onTap: _showComingSoon,
+        semanticLabel: 'MCP',
+      ),
+    );
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 8, 16, containerPadding),
+      padding: EdgeInsets.fromLTRB(20, 8, 20, paddingBottom),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: containerColor,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(color: outlineColor),
           boxShadow: [
             BoxShadow(
               color: isDark
                   ? Colors.black.withOpacity(0.32)
-                  : Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 12),
+                  : Colors.black.withOpacity(0.08),
+              blurRadius: 28,
+              offset: const Offset(0, 14),
             ),
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,7 +235,7 @@ class _MessageInputState extends State<MessageInput> {
                 child: _attachments.isEmpty
                     ? const SizedBox.shrink()
                     : Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
+                        padding: const EdgeInsets.only(bottom: 12),
                         child: SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
@@ -137,7 +243,7 @@ class _MessageInputState extends State<MessageInput> {
                               _attachments.length,
                               (index) => Padding(
                                 padding: EdgeInsets.only(
-                                  right: index == _attachments.length - 1 ? 0 : 10,
+                                  right: index == _attachments.length - 1 ? 0 : 8,
                                 ),
                                 child: _AttachmentChip(
                                   attachment: _attachments[index],
@@ -151,17 +257,17 @@ class _MessageInputState extends State<MessageInput> {
               ),
               ConstrainedBox(
                 constraints: const BoxConstraints(
-                  minHeight: 68,
-                  maxHeight: 200,
+                  minHeight: 56,
+                  maxHeight: 160,
                 ),
                 child: TextField(
                   controller: _controller,
                   focusNode: _focusNode,
                   maxLines: null,
                   onChanged: (_) => setState(() {}),
-                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+                  style: theme.textTheme.bodyLarge?.copyWith(height: 1.4),
                   decoration: InputDecoration(
-                    hintText: '输入内容…',
+                    hintText: '鍙戦€佹秷鎭?..',
                     hintStyle: theme.textTheme.bodyMedium?.copyWith(
                       color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
                     ),
@@ -172,50 +278,21 @@ class _MessageInputState extends State<MessageInput> {
                   textInputAction: TextInputAction.newline,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   Expanded(
-                    child: Wrap(
-                      spacing: 12,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        _ToolButton(
-                          icon: CherryIcons.assets(
-                            size: 18,
-                            color: isDark
-                                ? Tokens.textPrimaryDark
-                                : Tokens.textPrimaryLight,
-                          ),
-                          onTap: _pickFiles,
-                          semanticLabel: '添加附件',
-                        ),
-                        _ToolButton(
-                          icon: CherryIcons.lightbulbOff(
-                            size: 18,
-                            color: isDark ? Tokens.greenDark100 : Tokens.green100,
-                          ),
-                          onTap: _showComingSoon,
-                          semanticLabel: '思考模式',
-                        ),
-                        _MentionPill(onTap: _showComingSoon),
-                        _ToolButton(
-                          icon: CherryIcons.mcp(
-                            size: 18,
-                            color: isDark
-                                ? Tokens.textPrimaryDark
-                                : Tokens.textPrimaryLight,
-                          ),
-                          onTap: _showComingSoon,
-                          semanticLabel: 'MCP',
-                        ),
-                      ],
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: EdgeInsets.zero,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: actionItems,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
+                  const SizedBox(width: 18),                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
                     transitionBuilder: (child, animation) => ScaleTransition(
                       scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
                       child: FadeTransition(opacity: animation, child: child),
@@ -239,9 +316,8 @@ class _MessageInputState extends State<MessageInput> {
       ),
     );
   }
-}
 
-class _ToolButton extends StatelessWidget {
+  class _ToolButton extends StatelessWidget {
   final Widget icon;
   final VoidCallback? onTap;
   final String semanticLabel;
@@ -260,23 +336,26 @@ class _ToolButton extends StatelessWidget {
     return Semantics(
       button: true,
       label: semanticLabel,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: isDark ? const Color(0xFF1F242A) : const Color(0xFFF4F5F6),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withOpacity(0.05)
-                  : Colors.black.withOpacity(0.05),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: isDark ? const Color(0xFF20252C) : const Color(0xFFF3F5F7),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withOpacity(0.06)
+                    : Colors.black.withOpacity(0.04),
+              ),
             ),
+            alignment: Alignment.center,
+            child: icon,
           ),
-          alignment: Alignment.center,
-          child: icon,
         ),
       ),
     );
@@ -285,13 +364,58 @@ class _ToolButton extends StatelessWidget {
 
 class _MentionPill extends StatelessWidget {
   final VoidCallback onTap;
+  final List<Assistant> assistants;
 
-  const _MentionPill({required this.onTap});
+  const _MentionPill({
+    required this.onTap,
+    required this.assistants,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Tokens.greenDark100 : Tokens.green100;
+    final background = isDark ? Tokens.greenDark10 : Tokens.green10;
+    final borderColor = isDark ? Tokens.greenDark20 : Tokens.green20;
+
+    final visible = assistants.take(3).toList();
+    final children = <Widget>[];
+
+    if (assistants.isEmpty) {
+      children.add(Icon(Icons.alternate_email, size: 18, color: textColor));
+    } else {
+      for (var i = 0; i < visible.length; i++) {
+        final assistant = visible[i];
+        final emoji = assistant.emoji;
+        if (emoji != null && emoji.isNotEmpty) {
+          children.add(Text(emoji, style: const TextStyle(fontSize: 18)));
+        } else {
+          children.add(Icon(Icons.smart_toy_outlined, size: 16, color: textColor));
+        }
+        if (i != visible.length - 1) {
+          children.add(const SizedBox(width: 4));
+        }
+      }
+      children.add(const SizedBox(width: 6));
+
+      final label =
+          assistants.length == 1 ? assistants.first.name : '${assistants.length} 个助手';
+      children.add(
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 120),
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: textColor,
+              fontWeight: FontWeight.w600,
+            ),
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+          ),
+        ),
+      );
+    }
 
     return InkWell(
       onTap: onTap,
@@ -300,28 +424,15 @@ class _MentionPill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
-          color: isDark ? Tokens.greenDark10 : Tokens.green10,
+          color: background,
           border: Border.all(
-            color: isDark ? Tokens.greenDark20 : Tokens.green20,
+            color: borderColor,
             width: 0.7,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.alternate_email,
-              size: 16,
-              color: isDark ? Tokens.greenDark100 : Tokens.green100,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              '模型',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: isDark ? Tokens.greenDark100 : Tokens.green100,
-              ),
-            ),
-          ],
+          children: children,
         ),
       ),
     );
@@ -343,10 +454,10 @@ class _SendButton extends StatelessWidget {
     return GestureDetector(
       onTap: enabled ? onPressed : null,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 160),
         curve: Curves.easeOut,
-        width: 48,
-        height: 48,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
           gradient: enabled
@@ -360,8 +471,8 @@ class _SendButton extends StatelessWidget {
           boxShadow: enabled
               ? [
                   BoxShadow(
-                    color: const Color(0xFF3BB554).withOpacity(0.45),
-                    blurRadius: 18,
+                    color: const Color(0xFF3BB554).withOpacity(0.35),
+                    blurRadius: 16,
                     offset: const Offset(0, 10),
                   ),
                 ]
@@ -369,11 +480,11 @@ class _SendButton extends StatelessWidget {
         ),
         alignment: Alignment.center,
         child: enabled
-            ? CherryIcons.arrowUp(size: 22)
+            ? CherryIcons.arrowUp(size: 20)
             : Icon(
-                Icons.arrow_upward,
-                size: 20,
-                color: Colors.white.withOpacity(0.4),
+                Icons.arrow_upward_rounded,
+                size: 18,
+                color: Colors.white.withOpacity(0.5),
               ),
       ),
     );
@@ -390,8 +501,8 @@ class _PauseButton extends StatelessWidget {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
-        width: 48,
-        height: 48,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
           color: const Color(0xFFED6767),
@@ -400,7 +511,7 @@ class _PauseButton extends StatelessWidget {
         child: const Icon(
           Icons.pause_circle_filled,
           color: Colors.white,
-          size: 24,
+          size: 22,
         ),
       ),
     );
@@ -422,13 +533,14 @@ class _AttachmentChip extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: isDark ? const Color(0xFF1F242A) : const Color(0xFFF4F5F6),
+        color: isDark ? const Color(0xFF20252C) : const Color(0xFFF2F4F6),
         border: Border.all(
-          color:
-              isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+          color: isDark
+              ? Colors.white.withOpacity(0.05)
+              : Colors.black.withOpacity(0.05),
         ),
       ),
       child: Row(
@@ -447,7 +559,7 @@ class _AttachmentChip extends StatelessWidget {
               style: theme.textTheme.bodySmall,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           GestureDetector(
             onTap: onRemove,
             child: Icon(
@@ -455,6 +567,143 @@ class _AttachmentChip extends StatelessWidget {
               size: 16,
               color: theme.iconTheme.color?.withOpacity(0.7),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MentionSelector extends StatefulWidget {
+  final List<Assistant> assistants;
+  final Set<String> initialSelection;
+
+  const _MentionSelector({
+    required this.assistants,
+    required this.initialSelection,
+  });
+
+  @override
+  State<_MentionSelector> createState() => _MentionSelectorState();
+}
+
+class _MentionSelectorState extends State<_MentionSelector> {
+  late Set<String> _selection;
+
+  @override
+  void initState() {
+    super.initState();
+    _selection = Set<String>.from(widget.initialSelection);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF171A1F) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 44,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '閫夋嫨瑕?@ 鐨勫姪鎵?,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Flexible(
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: widget.assistants.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final item = widget.assistants[index];
+                final selected = _selection.contains(item.id);
+                return InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    setState(() {
+                      if (selected) {
+                        _selection.remove(item.id);
+                      } else {
+                        _selection.add(item.id);
+                      }
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: selected
+                          ? (isDark ? Tokens.greenDark10 : Tokens.green10)
+                          : (isDark
+                              ? const Color(0xFF1C2026)
+                              : const Color(0xFFF5F6F8)),
+                      border: Border.all(
+                        color: selected
+                            ? (isDark ? Tokens.greenDark20 : Tokens.green20)
+                            : Colors.transparent,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(item.emoji ?? '馃', style: const TextStyle(fontSize: 20)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            item.name,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (selected)
+                          Icon(Icons.check_rounded,
+                              size: 18,
+                              color: isDark ? Tokens.greenDark100 : Tokens.green100),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context, widget.initialSelection.toList()),
+                  child: const Text('鍙栨秷'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _selection.isEmpty
+                      ? null
+                      : () => Navigator.pop(context, _selection.toList()),
+                  child: const Text('瀹屾垚'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -472,3 +721,5 @@ String _guessMime(String name) {
   if (lower.endsWith('.pdf')) return 'application/pdf';
   return 'application/octet-stream';
 }
+
+

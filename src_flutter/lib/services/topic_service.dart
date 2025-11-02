@@ -41,13 +41,13 @@ class Topic {
         'isLoading': isLoading,
       };
 
-  static Topic fromJson(Map m) => Topic(
-        id: m['id'] as String,
-        assistantId: m['assistantId'] as String,
-        name: m['name'] as String,
-        createdAt: (m['createdAt'] as num).toInt(),
-        updatedAt: (m['updatedAt'] as num).toInt(),
-        isLoading: (m['isLoading'] as bool?) ?? false,
+  static Topic fromJson(Map<dynamic, dynamic> json) => Topic(
+        id: json['id'] as String,
+        assistantId: json['assistantId'] as String,
+        name: json['name'] as String,
+        createdAt: (json['createdAt'] as num).toInt(),
+        updatedAt: (json['updatedAt'] as num).toInt(),
+        isLoading: (json['isLoading'] as bool?) ?? false,
       );
 }
 
@@ -60,26 +60,26 @@ class TopicService {
   Future<Topic> ensureDefaultTopic() async {
     final currentId = _prefs.getCurrentTopicId();
     if (currentId != null) {
-      final t = await getTopicById(currentId);
-      if (t != null) return t;
+      final existing = await getTopicById(currentId);
+      if (existing != null) return existing;
     }
 
-    final newTopic = Topic(
+    final topic = Topic(
       id: newId(),
       assistantId: 'default',
       name: '新主题',
       createdAt: DateTime.now().millisecondsSinceEpoch,
       updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
-    await Boxes.topics.put(newTopic.id, newTopic.toJson());
-    await _prefs.setCurrentTopicId(newTopic.id);
+    await Boxes.topics.put(topic.id, topic.toJson());
+    await _prefs.setCurrentTopicId(topic.id);
     _notify();
-    return newTopic;
+    return topic;
   }
 
   Future<Topic?> getTopicById(String id) async {
-    final m = Boxes.topics.get(id) as Map?;
-    return m == null ? null : Topic.fromJson(m);
+    final raw = Boxes.topics.get(id) as Map?;
+    return raw == null ? null : Topic.fromJson(raw);
   }
 
   Future<List<Topic>> getTopics() async {
@@ -88,36 +88,38 @@ class TopicService {
   }
 
   Future<Topic> createTopic({String assistantId = 'default', String name = '新主题'}) async {
-    final t = Topic(
+    final topic = Topic(
       id: newId(),
       assistantId: assistantId,
       name: name,
       createdAt: DateTime.now().millisecondsSinceEpoch,
       updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
-    await Boxes.topics.put(t.id, t.toJson());
-    await _prefs.setCurrentTopicId(t.id);
+    await Boxes.topics.put(topic.id, topic.toJson());
+    await _prefs.setCurrentTopicId(topic.id);
     _notify();
-    return t;
+    return topic;
   }
 
   Future<void> renameTopic(String id, String name) async {
-    final t = await getTopicById(id);
-    if (t == null) return;
-    final updated = t.copyWith(name: name, updatedAt: DateTime.now().millisecondsSinceEpoch);
+    final topic = await getTopicById(id);
+    if (topic == null) return;
+    final updated = topic.copyWith(
+      name: name,
+      updatedAt: DateTime.now().millisecondsSinceEpoch,
+    );
     await Boxes.topics.put(id, updated.toJson());
     _notify();
   }
 
   Future<void> deleteTopic(String id) async {
     await Boxes.topics.delete(id);
-    // purge messages of this topic
-    final toDelete = Boxes.messages.keys.where((k) {
-      final m = Boxes.messages.get(k) as Map?;
-      return m != null && m['topicId'] == id;
+    final toDelete = Boxes.messages.keys.where((key) {
+      final entry = Boxes.messages.get(key) as Map?;
+      return entry != null && entry['topicId'] == id;
     }).toList();
-    for (final k in toDelete) {
-      await Boxes.messages.delete(k);
+    for (final key in toDelete) {
+      await Boxes.messages.delete(key);
     }
     if (_prefs.getCurrentTopicId() == id) {
       await ensureDefaultTopic();
@@ -130,25 +132,28 @@ class TopicService {
 
   void addListener(void Function() cb) => _listeners.add(cb);
   void removeListener(void Function() cb) => _listeners.remove(cb);
+
   void _notify() {
-    for (final l in _listeners) l();
+    for (final listener in _listeners) {
+      listener();
+    }
   }
 }
 
 final topicServiceProvider = Provider<TopicService>((ref) => TopicService(prefsService));
 
 final topicsProvider = StreamProvider<List<Topic>>((ref) async* {
-  final svc = ref.read(topicServiceProvider);
-  final controller = StreamController<List<Topic>>();
-  void push() async => controller.add(await svc.getTopics());
-  svc.addListener(push);
-  ref.onDispose(() {
-    svc.removeListener(push);
-    controller.close();
+    final svc = ref.read(topicServiceProvider);
+    final controller = StreamController<List<Topic>>();
+    Future<void> push() async => controller.add(await svc.getTopics());
+    svc.addListener(push);
+    ref.onDispose(() {
+      svc.removeListener(push);
+      controller.close();
+    });
+    await push();
+    yield* controller.stream;
   });
-  push();
-  yield* controller.stream;
-});
 
 final currentTopicProvider = FutureProvider<Topic>((ref) async {
   final svc = ref.read(topicServiceProvider);

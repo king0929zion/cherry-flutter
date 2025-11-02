@@ -8,6 +8,7 @@ import 'providers/theme.dart';
 import 'app_router.dart';
 import 'data/boxes.dart';
 import 'providers/locale.dart';
+import 'i18n/app_localizations.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -54,6 +55,7 @@ class CherryApp extends ConsumerWidget {
       locale: locale,
       supportedLocales: const [Locale('en'), Locale('zh')],
       localizationsDelegates: const [
+        AppLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,

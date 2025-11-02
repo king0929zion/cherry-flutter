@@ -3,7 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/provider_settings.dart';
+import '../../providers/model_provider.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/model_selector.dart';
+import '../../models/model.dart';
 
 class ProvidersSettingsScreen extends ConsumerStatefulWidget {
   const ProvidersSettingsScreen({super.key});

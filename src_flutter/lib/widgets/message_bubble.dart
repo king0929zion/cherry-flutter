@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
 import 'cherry_markdown.dart';
+import 'tool_call_block.dart';
+import '../models/tool_call.dart';
 
 class MessageBubble extends StatelessWidget {
   final String content;
@@ -10,6 +12,7 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback? onTranslate;
   final VoidCallback? onRegenerate;
   final VoidCallback? onDelete;
+  final List<ToolCallBlock>? toolCalls;
 
   const MessageBubble({
     super.key,
@@ -19,6 +22,7 @@ class MessageBubble extends StatelessWidget {
     this.onTranslate,
     this.onRegenerate,
     this.onDelete,
+    this.toolCalls,
   });
 
   @override
@@ -33,9 +37,16 @@ class MessageBubble extends StatelessWidget {
         padding: isUser
             ? const EdgeInsets.fromLTRB(20, 14, 20, 16)
             : const EdgeInsets.fromLTRB(20, 16, 20, 18),
-        child: CherryMarkdown(
-          data: content,
-          isUserBubble: isUser,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CherryMarkdown(
+              data: content,
+              isUserBubble: isUser,
+            ),
+            if (toolCalls != null && toolCalls!.isNotEmpty)
+              ToolCallList(toolCalls: toolCalls!),
+          ],
         ),
       ),
     );

@@ -6,6 +6,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../providers/user_settings.dart';
 import '../../theme/tokens.dart';
+import '../../i18n/app_localizations.dart';
+
+const double _kTileHPadding = 16;
+const double _kTileVPadding = 14;
+const double _kIconGap = 12;
+const double _kIconBoxSize = 32;
+const double _kProfileAvatarSize = 48;
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -14,12 +21,15 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
     final user = ref.watch(userSettingsProvider);
+    final displayName =
+        user.displayName.trim().isEmpty ? l10n.personalSettings : user.displayName.trim();
 
     final groups = [
       _SettingGroupData(items: [
         _SettingItemData.profile(
-          title: user.displayName,
+          title: displayName,
           onTap: () => context.go('/settings/about/personal'),
           avatarBytes: user.avatarBytes,
         ),
@@ -31,6 +41,11 @@ class SettingsScreen extends ConsumerWidget {
             title: '供应商设置',
             icon: Icons.cloud_outlined,
             onTap: () => context.go('/settings/providers'),
+          ),
+          _SettingItemData(
+            title: '模型管理',
+            icon: Icons.smart_toy_outlined,
+            onTap: () => context.go('/settings/models'),
           ),
           _SettingItemData(
             title: '助手设置',
@@ -82,7 +97,7 @@ class SettingsScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '设置',
+                      l10n.settings,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -188,42 +203,46 @@ class _SettingGroup extends StatelessWidget {
               ),
             ),
           ),
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1C1F25) : Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withOpacity(0.05)
-                  : Colors.black.withOpacity(0.05),
-            ),
-            boxShadow: [
-              BoxShadow(
+        ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF161A1F) : Tokens.cardLight,
+              border: Border.all(
                 color: isDark
-                    ? Colors.black.withOpacity(0.25)
-                    : Colors.black.withOpacity(0.04),
-                blurRadius: 24,
-                offset: const Offset(0, 14),
+                    ? Colors.white.withOpacity(0.06)
+                    : Colors.black.withOpacity(0.05),
               ),
-            ],
-          ),
-          child: Column(
-            children: [
-              for (var i = 0; i < items.length; i++) ...[
-                if (i != 0)
-                  Divider(
-                    height: 1,
-                    indent: items[i].isProfile ? 20 : 72,
-                    color: isDark
-                        ? Colors.white.withOpacity(0.06)
-                        : Colors.black.withOpacity(0.06),
-                  ),
-                _SettingTile(
-                  data: items[i],
-                  isDark: isDark,
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withOpacity(0.28)
+                      : Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
               ],
-            ],
+            ),
+            child: Column(
+              children: [
+                for (var i = 0; i < items.length; i++) ...[
+                  if (i != 0)
+                    Divider(
+                      height: 1,
+                      indent: _kTileHPadding +
+                          (items[i].isProfile ? _kProfileAvatarSize : _kIconBoxSize) +
+                          _kIconGap,
+                      color: isDark
+                          ? Colors.white.withOpacity(0.08)
+                          : Colors.black.withOpacity(0.06),
+                    ),
+                  _SettingTile(
+                    data: items[i],
+                    isDark: isDark,
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ],
@@ -243,35 +262,41 @@ class _SettingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
-      onTap: data.onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        child: Row(
-          children: [
-            _LeadingIcon(
-              data: data,
-              isDark: isDark,
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                data.title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: data.onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: _kTileHPadding,
+            vertical: _kTileVPadding,
+          ),
+          child: Row(
+            children: [
+              _LeadingIcon(
+                data: data,
+                isDark: isDark,
+              ),
+              const SizedBox(width: _kIconGap),
+              Expanded(
+                child: Text(
+                  data.title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                  ),
                 ),
               ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: isDark
-                  ? Tokens.textSecondaryDark
-                  : Tokens.textSecondaryLight,
-            ),
-          ],
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: isDark
+                    ? Tokens.textSecondaryDark
+                    : Tokens.textSecondaryLight,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -292,48 +317,38 @@ class _LeadingIcon extends StatelessWidget {
     if (data.isProfile) {
       final bytes = data.avatarBytes;
       return Container(
-        width: 52,
-        height: 52,
+        width: _kProfileAvatarSize,
+        height: _kProfileAvatarSize,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: LinearGradient(
-            colors: isDark
-                ? const [Color(0xFF2A2E37), Color(0xFF202229)]
-                : const [Color(0xFFF2F5F0), Color(0xFFE8EFE1)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
+            colors: isDark
+                ? const [Color(0xFF2B3038), Color(0xFF1F2229)]
+                : const [Color(0xFFF3F6F0), Color(0xFFE7EEE2)],
           ),
         ),
         alignment: Alignment.center,
         child: ClipOval(
           child: bytes == null
-              ? const Text('🍒', style: TextStyle(fontSize: 26))
+              ? const Text('🍒', style: TextStyle(fontSize: 24))
               : Image.memory(
                   bytes,
-                  width: 48,
-                  height: 48,
+                  width: _kProfileAvatarSize - 6,
+                  height: _kProfileAvatarSize - 6,
                   fit: BoxFit.cover,
                 ),
         ),
       );
     }
 
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: isDark ? const Color(0xFF262A32) : const Color(0xFFF3F5F7),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withOpacity(0.04)
-              : Colors.black.withOpacity(0.04),
-        ),
-      ),
-      alignment: Alignment.center,
+    return SizedBox(
+      width: _kIconBoxSize,
+      height: _kIconBoxSize,
       child: Icon(
-        data.icon,
-        size: 22,
+        data.icon!,
+        size: 24,
         color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
       ),
     );

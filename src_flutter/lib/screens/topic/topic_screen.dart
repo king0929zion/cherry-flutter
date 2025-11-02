@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../services/topic_service.dart';
 import '../../services/assistant_service.dart';
 import '../../widgets/topic_item.dart';
-import '../../widgets/loading_indicator.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/loading_indicator.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/app_shell.dart';
 
@@ -19,7 +19,7 @@ class TopicScreen extends ConsumerStatefulWidget {
 
 class _TopicScreenState extends ConsumerState<TopicScreen> {
   final TextEditingController _searchController = TextEditingController();
-  String _searchText = '';
+  String _query = '';
 
   @override
   void dispose() {
@@ -27,17 +27,16 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
     super.dispose();
   }
 
-  List<Topic> _filterTopics(List<Topic> topics) {
-    if (_searchText.trim().isEmpty) return topics;
-    final keyword = _searchText.trim().toLowerCase();
+  List<Topic> _filter(List<Topic> topics) {
+    if (_query.trim().isEmpty) return topics;
+    final term = _query.trim().toLowerCase();
     return topics
         .where((topic) =>
-            topic.name.toLowerCase().contains(keyword) ||
-            topic.id.toLowerCase().contains(keyword))
+            topic.name.toLowerCase().contains(term) || topic.id.toLowerCase().contains(term))
         .toList();
   }
 
-  Map<String, List<Topic>> _groupTopics(List<Topic> topics) {
+  Map<String, List<Topic>> _groupByDate(List<Topic> topics) {
     final now = DateTime.now();
     final groups = <String, List<Topic>>{
       '今天': [],
@@ -47,22 +46,28 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
       '更早': [],
     };
 
+    void add(String key, Topic topic) {
+      groups[key] ??= [];
+      groups[key]!.add(topic);
+    }
+
     for (final topic in topics) {
       final date = DateTime.fromMillisecondsSinceEpoch(topic.updatedAt);
       final diff = now.difference(date);
-      final target = diff.inDays == 0
-          ? '今天'
-          : diff.inDays == 1
-              ? '昨天'
-              : diff.inDays < 7
-                  ? '本周'
-                  : diff.inDays < 14
-                      ? '上周'
-                      : '更早';
-      groups[target]!.add(topic);
+      if (diff.inDays == 0) {
+        add('今天', topic);
+      } else if (diff.inDays == 1) {
+        add('昨天', topic);
+      } else if (diff.inDays < 7) {
+        add('本周', topic);
+      } else if (diff.inDays < 14) {
+        add('上周', topic);
+      } else {
+        add('更早', topic);
+      }
     }
 
-    groups.removeWhere((_, value) => value.isEmpty);
+    groups.removeWhere((key, value) => value.isEmpty);
     return groups;
   }
 
@@ -72,11 +77,6 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
     final assistantsAsync = ref.watch(assistantsProvider);
     final topicService = ref.read(topicServiceProvider);
     final activeTopicId = topicService.currentTopicId;
-
-    final assistantMap = assistantsAsync.maybeWhen(
-      data: (list) => {for (final a in list) a.id: a},
-      orElse: () => <String, Assistant>{},
-    );
 
     return Scaffold(
       appBar: AppBar(
@@ -104,121 +104,96 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
         ],
       ),
       body: topicsAsync.when(
+        loading: () => const LoadingIndicator(message: '加载中...'),
+        error: (error, stack) => ErrorView(
+          message: '加载主题失败',
+          details: error.toString(),
+          onRetry: () => ref.invalidate(topicsProvider),
+        ),
         data: (topics) {
-          final filtered = _filterTopics(topics);
+          final filtered = _filter(topics);
           if (filtered.isEmpty) {
-            return _searchText.isEmpty
-                ? EmptyState(
-                    icon: Icons.chat_bubble_outline,
-                    title: '暂无主题',
-                    description: '点击右上角按钮创建第一条对话',
-                    actionLabel: '创建新主题',
-                    onAction: () async {
-                      final newTopic = await topicService.createTopic();
-                      if (context.mounted) context.go('/home/chat/${newTopic.id}');
-                    },
-                  )
-                : SearchEmptyState(query: _searchText);
+            if (_query.isEmpty) {
+              return EmptyState(
+                icon: Icons.chat_bubble_outline,
+                title: '暂无主题',
+                description: '点击右上角按钮创建新的会话',
+                actionLabel: '创建新主题',
+                onAction: () async {
+                  final newTopic = await topicService.createTopic();
+                  if (context.mounted) context.go('/home/chat/${newTopic.id}');
+                },
+              );
+            }
+            return SearchEmptyState(query: _query);
           }
 
-          final grouped = _groupTopics(filtered);
+          final grouped = _groupByDate(filtered);
+          final assistants = assistantsAsync.maybeWhen(
+            data: (list) => {for (final a in list) a.id: a},
+            orElse: () => <String, Assistant>{},
+          );
+
+          final sections = grouped.entries.toList();
 
           return Column(
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                child: TextField(
+                child: _SearchField(
                   controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: '搜索主题或助手…',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchText.isEmpty
-                        ? null
-                        : IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _searchText = '');
-                            },
-                          ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  onChanged: (value) => setState(() => _searchText = value),
+                  onChanged: (value) => setState(() => _query = value),
                 ),
               ),
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  itemCount: grouped.length,
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  itemCount: sections.fold<int>(0, (sum, entry) => sum + 1 + entry.value.length),
                   itemBuilder: (context, index) {
-                    final entry = grouped.entries.elementAt(index);
-                    final topicsInGroup = entry.value;
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: Text(
-                            entry.key,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.color
-                                      ?.withOpacity(0.7),
-                                ),
+                    int offset = 0;
+                    for (final entry in sections) {
+                      if (index == offset) {
+                        return _SectionHeader(title: entry.key);
+                      }
+                      offset += 1;
+                      final topicsInGroup = entry.value;
+                      if (index < offset + topicsInGroup.length) {
+                        final topic = topicsInGroup[index - offset];
+                        final assistant = assistants[topic.assistantId];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: TopicItem(
+                            topicId: topic.id,
+                            topicName: topic.name,
+                            assistantName: assistant?.name ?? '默认助手',
+                            assistantEmoji: assistant?.emoji ?? '🤖',
+                            updatedAt: topic.updatedAt,
+                            isActive: topic.id == activeTopicId,
+                            onTap: () async {
+                              await topicService.setCurrentTopic(topic.id);
+                              if (context.mounted) context.go('/home/chat/${topic.id}');
+                            },
+                            onRename: () => _renameTopic(context, topicService, topic),
+                            onDelete: () => _confirmDelete(context, topicService, topic.id),
                           ),
-                        ),
-                        ...topicsInGroup.map((topic) {
-                          final assistant = assistantMap[topic.assistantId];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: TopicItem(
-                              topicId: topic.id,
-                              topicName: topic.name,
-                              assistantName: assistant?.name ?? '默认助手',
-                              assistantEmoji: assistant?.emoji ?? '🤖',
-                              updatedAt: topic.updatedAt,
-                              isActive: topic.id == activeTopicId,
-                              onTap: () async {
-                                await topicService.setCurrentTopic(topic.id);
-                                if (context.mounted) {
-                                  context.go('/home/chat/${topic.id}');
-                                }
-                              },
-                              onRename: () => _showRenameDialog(context, topicService, topic),
-                              onDelete: () => _confirmDelete(context, topicService, topic.id),
-                            ),
-                          );
-                        }),
-                      ],
-                    );
+                        );
+                      }
+                      offset += topicsInGroup.length;
+                    }
+                    return const SizedBox.shrink();
                   },
                 ),
               ),
             ],
           );
         },
-        loading: () => const LoadingIndicator(message: '加载中...'),
-        error: (err, _) => ErrorView(
-          message: '加载主题失败',
-          details: err.toString(),
-          onRetry: () => ref.invalidate(topicsProvider),
-        ),
       ),
     );
   }
 
-  Future<void> _showRenameDialog(
-    BuildContext context,
-    TopicService topicService,
-    Topic topic,
-  ) async {
+  Future<void> _renameTopic(BuildContext context, TopicService service, Topic topic) async {
     final controller = TextEditingController(text: topic.name);
-    final result = await showDialog<bool>(
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('重命名主题'),
@@ -229,25 +204,17 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('保存'),
-          ),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('保存')),
         ],
       ),
     );
-
-    if (result == true) {
-      await topicService.renameTopic(topic.id, controller.text.trim());
+    if (confirmed == true) {
+      await service.renameTopic(topic.id, controller.text.trim());
     }
   }
 
-  Future<void> _confirmDelete(
-    BuildContext context,
-    TopicService topicService,
-    String topicId,
-  ) async {
-    final confirm = await showDialog<bool>(
+  Future<void> _confirmDelete(BuildContext context, TopicService service, String id) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('删除主题'),
@@ -262,9 +229,53 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
         ],
       ),
     );
-
-    if (confirm == true) {
-      await topicService.deleteTopic(topicId);
+    if (confirmed == true) {
+      await service.deleteTopic(id);
     }
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 18, bottom: 10),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.65),
+            ),
+      ),
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  const _SearchField({required this.controller, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        prefixIcon: const Icon(Icons.search, size: 18),
+        hintText: '搜索主题或助手',
+        isDense: true,
+        filled: true,
+        fillColor: isDark ? const Color(0xFF1B1F26) : const Color(0xFFF4F5F7),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+      ),
+    );
   }
 }
