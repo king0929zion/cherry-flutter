@@ -59,3 +59,7 @@
 - 调整 MessageBubble 结构与圆角，重现原版绿色填充、边框与投影。
 - 新增 CherryMarkdown 组件，定制代码块工具栏、引用块与链接行为，Markdown 样式与原项目一致。
 - 引入原项目代码语言图标并更新 CI，确保 GitHub Actions 构建时自动声明资产路径。
+
+### 2025-11-02 构建修复 🔧
+- 修复 MessageBubble 缺失闭合、上下文菜单类位置导致的编译报错。
+- 调整 CherryMarkdown 代码块构建器覆写方式，兼容 flutter_markdown 0.7.7+1 的 API。
