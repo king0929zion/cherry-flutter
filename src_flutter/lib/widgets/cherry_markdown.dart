@@ -181,11 +181,14 @@ class _CodeBlockBuilder extends MarkdownElementBuilder {
   Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
     if (element.tag != 'pre') return null;
 
-    final codeElement = element.children?.firstWhere(
-      (child) => child is md.Element && child.tag == 'code',
-      orElse: () => null,
-    );
-    if (codeElement is! md.Element) return null;
+    md.Element? codeElement;
+    for (final child in element.children ?? const <md.Node>[]) {
+      if (child is md.Element && child.tag == 'code') {
+        codeElement = child;
+        break;
+      }
+    }
+    if (codeElement == null) return null;
 
     final classAttr = codeElement.attributes['class'] ?? '';
     final language = _normalizeLanguage(classAttr);
@@ -204,7 +207,7 @@ class _CodeBlockBuilder extends MarkdownElementBuilder {
   }
 
   @override
-  bool get isBlockElement => true;
+  bool isBlockElement() => true;
 }
 
 class _CherryCodeBlock extends StatelessWidget {

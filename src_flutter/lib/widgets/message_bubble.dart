@@ -168,6 +168,7 @@ class MessageBubble extends StatelessWidget {
       ),
     );
   }
+}
 
 class _ActionTile extends StatelessWidget {
   const _ActionTile({
