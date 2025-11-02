@@ -11,6 +11,8 @@ class PrefsService {
 
   double? getDouble(String key) => Boxes.prefs.get(key) as double?;
   Future<void> setDouble(String key, double value) => Boxes.prefs.put(key, value);
+
+  Future<void> remove(String key) => Boxes.prefs.delete(key);
 }
 
 final prefsService = PrefsService();

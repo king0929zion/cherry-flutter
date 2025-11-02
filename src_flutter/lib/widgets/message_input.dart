@@ -93,7 +93,7 @@ class _MessageInputState extends State<MessageInput> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final bottomInset = MediaQuery.of(context).padding.bottom;
-    final containerPadding = max(bottomInset, 16.0);
+    final containerPadding = max(bottomInset, 12.0);
     final canSend = _controller.text.trim().isNotEmpty || _attachments.isNotEmpty;
 
     final containerColor = isDark ? const Color(0xFF181B1F) : Colors.white;
@@ -101,24 +101,24 @@ class _MessageInputState extends State<MessageInput> {
         isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.06);
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 10, 16, containerPadding),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, containerPadding),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: containerColor,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(color: outlineColor),
           boxShadow: [
             BoxShadow(
               color: isDark
-                  ? Colors.black.withOpacity(0.45)
-                  : Colors.black.withOpacity(0.08),
-              blurRadius: 28,
-              offset: const Offset(0, 16),
+                  ? Colors.black.withOpacity(0.32)
+                  : Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 12),
             ),
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,7 +151,7 @@ class _MessageInputState extends State<MessageInput> {
               ),
               ConstrainedBox(
                 constraints: const BoxConstraints(
-                  minHeight: 96,
+                  minHeight: 68,
                   maxHeight: 200,
                 ),
                 child: TextField(
@@ -172,7 +172,7 @@ class _MessageInputState extends State<MessageInput> {
                   textInputAction: TextInputAction.newline,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -183,7 +183,7 @@ class _MessageInputState extends State<MessageInput> {
                       children: [
                         _ToolButton(
                           icon: CherryIcons.assets(
-                            size: 20,
+                            size: 18,
                             color: isDark
                                 ? Tokens.textPrimaryDark
                                 : Tokens.textPrimaryLight,
@@ -193,7 +193,7 @@ class _MessageInputState extends State<MessageInput> {
                         ),
                         _ToolButton(
                           icon: CherryIcons.lightbulbOff(
-                            size: 20,
+                            size: 18,
                             color: isDark ? Tokens.greenDark100 : Tokens.green100,
                           ),
                           onTap: _showComingSoon,
@@ -202,7 +202,7 @@ class _MessageInputState extends State<MessageInput> {
                         _MentionPill(onTap: _showComingSoon),
                         _ToolButton(
                           icon: CherryIcons.mcp(
-                            size: 20,
+                            size: 18,
                             color: isDark
                                 ? Tokens.textPrimaryDark
                                 : Tokens.textPrimaryLight,
@@ -262,12 +262,12 @@ class _ToolButton extends StatelessWidget {
       label: semanticLabel,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          width: 44,
-          height: 44,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             color: isDark ? const Color(0xFF1F242A) : const Color(0xFFF4F5F6),
             border: Border.all(
               color: isDark
@@ -297,7 +297,7 @@ class _MentionPill extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
           color: isDark ? Tokens.greenDark10 : Tokens.green10,
@@ -424,7 +424,7 @@ class _AttachmentChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         color: isDark ? const Color(0xFF1F242A) : const Color(0xFFF4F5F6),
         border: Border.all(
           color:

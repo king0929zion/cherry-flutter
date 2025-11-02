@@ -14,6 +14,7 @@ import 'screens/settings/providers_settings_screen.dart';
 import 'screens/settings/datasource_settings_screen.dart';
 import 'screens/settings/websearch_settings_screen.dart';
 import 'screens/settings/about/about_screen.dart';
+import 'screens/settings/personal_settings_screen.dart';
 import 'screens/assistant/assistant_screen.dart';
 import 'screens/assistant/assistant_market_screen.dart';
 import 'screens/assistant/assistant_detail_screen.dart';
@@ -59,6 +60,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(path: 'data-sources', builder: (ctx, st) => const DataSourceSettingsScreen()),
               GoRoute(path: 'web-search', builder: (ctx, st) => const WebSearchSettingsScreen()),
               GoRoute(path: 'about', builder: (ctx, st) => const AboutScreen()),
+              GoRoute(path: 'about/personal', builder: (ctx, st) => const PersonalSettingsScreen()),
             ],
           ),
           GoRoute(path: '/assistant', builder: (ctx, st) => const AssistantScreen()),

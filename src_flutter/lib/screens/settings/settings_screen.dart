@@ -1,207 +1,228 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../providers/user_settings.dart';
 import '../../theme/tokens.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final user = ref.watch(userSettingsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('设置'),
-        centerTitle: false,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-        children: [
-          _ProfileCard(
-            onTap: () => context.go('/settings/about/personal'),
+    final groups = [
+      _SettingGroupData(items: [
+        _SettingItemData.profile(
+          title: user.displayName,
+          onTap: () => context.go('/settings/about/personal'),
+          avatarBytes: user.avatarBytes,
+        ),
+      ]),
+      _SettingGroupData(
+        title: '模型与服务',
+        items: [
+          _SettingItemData(
+            title: '供应商设置',
+            icon: Icons.cloud_outlined,
+            onTap: () => context.go('/settings/providers'),
           ),
-          const SizedBox(height: 24),
-          _SectionHeader(
-            icon: Icons.dashboard_customize_outlined,
-            title: '模型与服务',
-            subtitle: '配置供应商、助手和 Web 搜索选项。',
+          _SettingItemData(
+            title: '助手设置',
+            icon: Icons.inventory_2_outlined,
+            onTap: () => context.go('/settings/assistant'),
           ),
-          const SizedBox(height: 12),
-          _SettingsCard(
-            items: [
-              _SettingTile(
-                icon: Icons.cloud_outlined,
-                title: '供应商设置',
-                subtitle: '配置 API 端点、密钥和模型',
-                onTap: () => context.go('/settings/providers'),
-              ),
-              _SettingTile(
-                icon: Icons.smart_toy_outlined,
-                title: '助手设置',
-                subtitle: '绑定默认/快速/翻译助手',
-                onTap: () => context.go('/settings/assistant'),
-              ),
-              _SettingTile(
-                icon: Icons.public_outlined,
-                title: '网页搜索',
-                subtitle: '配置搜索引擎和模板',
-                onTap: () => context.go('/settings/web-search'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 28),
-          _SectionHeader(
-            icon: Icons.tune_outlined,
-            title: '通用',
-            subtitle: '控制外观、语言和数据管理。',
-          ),
-          const SizedBox(height: 12),
-          _SettingsCard(
-            items: [
-              _SettingTile(
-                icon: Icons.settings_outlined,
-                title: '通用设置',
-                subtitle: '主题模式、语言、备份',
-                onTap: () => context.go('/settings/general'),
-              ),
-              _SettingTile(
-                icon: Icons.storage_outlined,
-                title: '数据管理',
-                subtitle: '导入导出、清除数据',
-                onTap: () => context.go('/settings/data-sources'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 28),
-          _SectionHeader(
-            icon: Icons.info_outline,
-            title: '关于',
-            subtitle: '版本信息、开源许可等内容。',
-          ),
-          const SizedBox(height: 12),
-          _SettingsCard(
-            items: [
-              _SettingTile(
-                icon: Icons.info_outline,
-                title: '关于',
-                subtitle: '查看版本号与开源信息',
-                onTap: () => context.go('/settings/about'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                '所有设置均存储在本地 Hive 数据库中，不会上传到服务器。'
-                '\n如需在多设备间迁移，可使用“通用设置 > 数据导出/导入”功能。',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color:
-                      isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
-                  height: 1.45,
-                ),
-              ),
-            ),
+          _SettingItemData(
+            title: '网页搜索',
+            icon: Icons.public_outlined,
+            onTap: () => context.go('/settings/web-search'),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ProfileCard extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _ProfileCard({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: ListTile(
-        onTap: onTap,
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: Tokens.brand,
-            borderRadius: BorderRadius.circular(16),
+      _SettingGroupData(
+        title: '设置',
+        items: [
+          _SettingItemData(
+            title: '通用设置',
+            icon: Icons.settings_outlined,
+            onTap: () => context.go('/settings/general'),
           ),
-          alignment: Alignment.center,
-          child: const Text(
-            'C',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+          _SettingItemData(
+            title: '数据管理',
+            icon: Icons.storage_outlined,
+            onTap: () => context.go('/settings/data-sources'),
+          ),
+        ],
+      ),
+      _SettingGroupData(
+        title: '数据与安全',
+        items: [
+          _SettingItemData(
+            title: '关于',
+            icon: Icons.info_outline,
+            onTap: () => context.go('/settings/about'),
+          ),
+        ],
+      ),
+    ];
+
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '设置',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '调整 Cherry Studio 的外观、模型与数据配置',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: isDark
+                            ? Tokens.textSecondaryDark
+                            : Tokens.textSecondaryLight,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+              SliverList.builder(
+                itemCount: groups.length,
+                itemBuilder: (context, index) {
+                  final group = groups[index];
+                  return Padding(
+                    padding: EdgeInsets.only(top: index == 0 ? 0 : 20),
+                    child: _SettingGroup(
+                      title: group.title,
+                      items: group.items,
+                      isDark: isDark,
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
-        title: Text(
-          'Cherry Studio',
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        subtitle: const Text('查看个人信息与协议'),
-        trailing: const Icon(Icons.chevron_right),
       ),
     );
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
+class _SettingGroupData {
+  final String? title;
+  final List<_SettingItemData> items;
 
-  const _SectionHeader({
-    required this.icon,
+  const _SettingGroupData({
+    this.title,
+    required this.items,
+  });
+}
+
+class _SettingItemData {
+  final String title;
+  final IconData? icon;
+  final VoidCallback onTap;
+  final Uint8List? avatarBytes;
+
+  const _SettingItemData({
     required this.title,
-    required this.subtitle,
+    this.icon,
+    this.avatarBytes,
+    required this.onTap,
+  });
+
+  factory _SettingItemData.profile({
+    required String title,
+    required VoidCallback onTap,
+    Uint8List? avatarBytes,
+  }) =>
+      _SettingItemData(
+        title: title,
+        onTap: onTap,
+        avatarBytes: avatarBytes,
+      );
+
+  bool get isProfile => icon == null;
+}
+
+class _SettingGroup extends StatelessWidget {
+  final String? title;
+  final List<_SettingItemData> items;
+  final bool isDark;
+
+  const _SettingGroup({
+    required this.items,
+    required this.isDark,
+    this.title,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            color: (isDark ? Tokens.bgSecondaryDark : Tokens.bgSecondaryLight)
-                .withOpacity(0.6),
+        if (title != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 6, bottom: 10),
+            child: Text(
+              title!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
+            ),
           ),
-          child: Icon(icon, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1C1F25) : Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.black.withOpacity(0.05),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.25)
+                    : Colors.black.withOpacity(0.04),
+                blurRadius: 24,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+              for (var i = 0; i < items.length; i++) ...[
+                if (i != 0)
+                  Divider(
+                    height: 1,
+                    indent: items[i].isProfile ? 20 : 72,
+                    color: isDark
+                        ? Colors.white.withOpacity(0.06)
+                        : Colors.black.withOpacity(0.06),
+                  ),
+                _SettingTile(
+                  data: items[i],
+                  isDark: isDark,
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: isDark
-                      ? Tokens.textSecondaryDark
-                      : Tokens.textSecondaryLight,
-                ),
-              ),
+              ],
             ],
           ),
         ),
@@ -210,64 +231,111 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _SettingsCard extends StatelessWidget {
-  final List<_SettingTile> items;
+class _SettingTile extends StatelessWidget {
+  final _SettingItemData data;
+  final bool isDark;
 
-  const _SettingsCard({required this.items});
+  const _SettingTile({
+    required this.data,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Column(
-        children: List.generate(
-          items.length,
-          (index) => Column(
-            children: [
-              if (index != 0) const Divider(height: 1, indent: 64),
-              items[index],
-            ],
-          ),
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: data.onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        child: Row(
+          children: [
+            _LeadingIcon(
+              data: data,
+              isDark: isDark,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                data.title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: isDark
+                  ? Tokens.textSecondaryDark
+                  : Tokens.textSecondaryLight,
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _SettingTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
+class _LeadingIcon extends StatelessWidget {
+  final _SettingItemData data;
+  final bool isDark;
 
-  const _SettingTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
+  const _LeadingIcon({
+    required this.data,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListTile(
-      leading: Container(
-        width: 44,
-        height: 44,
+    if (data.isProfile) {
+      final bytes = data.avatarBytes;
+      return Container(
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: theme.colorScheme.secondaryContainer.withOpacity(0.25),
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            colors: isDark
+                ? const [Color(0xFF2A2E37), Color(0xFF202229)]
+                : const [Color(0xFFF2F5F0), Color(0xFFE8EFE1)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-        child: Icon(icon, size: 22),
+        alignment: Alignment.center,
+        child: ClipOval(
+          child: bytes == null
+              ? const Text('🍒', style: TextStyle(fontSize: 26))
+              : Image.memory(
+                  bytes,
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                ),
+        ),
+      );
+    }
+
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: isDark ? const Color(0xFF262A32) : const Color(0xFFF3F5F7),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.04)
+              : Colors.black.withOpacity(0.04),
+        ),
       ),
-      title: Text(
-        title,
-        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+      alignment: Alignment.center,
+      child: Icon(
+        data.icon,
+        size: 22,
+        color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
       ),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
     );
   }
 }

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 
 import '../../providers/app_state.dart';
-import '../../providers/provider_settings.dart';
 import '../../services/message_service.dart';
 import '../../services/topic_service.dart';
 import '../../widgets/message_input.dart';
@@ -29,7 +28,6 @@ class ChatScreen extends ConsumerWidget {
     }
 
     final messages = ref.watch(messagesProvider(effectiveTopic));
-    final cfg = ref.watch(providerSettingsProvider);
     final streamingMap = ref.watch(streamingProvider);
     final isStreaming = streamingMap.containsKey(effectiveTopic);
     
@@ -37,14 +35,6 @@ class ChatScreen extends ConsumerWidget {
       appBar: ChatHeader(topicId: effectiveTopic),
       body: Column(
         children: [
-          if (cfg.apiKey.isEmpty)
-            Material(
-              color: Colors.amber.shade100,
-              child: const ListTile(
-                leading: Icon(Icons.info_outline),
-                title: Text('请先在 设置 -> 供应商 设置 OpenAI API Key 才能调用模型'),
-              ),
-            ),
           if (isStreaming)
             Material(
               color: Colors.blueGrey.shade50,
