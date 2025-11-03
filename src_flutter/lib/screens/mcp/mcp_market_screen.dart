@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../models/mcp.dart';
 import '../../services/mcp_service.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/header_bar.dart';
 import 'mcp_server_editor_screen.dart';
 
 class McpMarketScreen extends ConsumerWidget {
@@ -15,11 +17,24 @@ class McpMarketScreen extends ConsumerWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('MCP 市场'),
-        centerTitle: false,
-      ),
-      body: SingleChildScrollView(
+      backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            HeaderBar(
+              title: 'MCP 市场',
+              leftButton: HeaderBarButton(
+                icon: Icon(
+                  Icons.arrow_back,
+                  size: 24,
+                  color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                ),
+                onPress: () => context.pop(),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,6 +61,10 @@ class McpMarketScreen extends ConsumerWidget {
             
             // 服务器分类
             _ServerCategories(),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

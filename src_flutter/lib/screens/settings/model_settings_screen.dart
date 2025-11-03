@@ -8,6 +8,7 @@ import '../../theme/tokens.dart';
 import '../../models/model.dart';
 import '../../widgets/model_selector.dart';
 import '../../widgets/custom_model_form.dart';
+import '../../widgets/header_bar.dart';
 
 class ModelSettingsScreen extends ConsumerWidget {
   const ModelSettingsScreen({super.key});
@@ -21,18 +22,32 @@ class ModelSettingsScreen extends ConsumerWidget {
     final selectedModel = ref.watch(selectedModelProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('模型管理'),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_outlined),
-            onPressed: () => _showAddModelDialog(context, ref),
-            tooltip: '添加自定义模型',
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
+      backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            HeaderBar(
+              title: '模型管理',
+              leftButton: HeaderBarButton(
+                icon: Icon(
+                  Icons.arrow_back,
+                  size: 24,
+                  color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                ),
+                onPress: () => context.pop(),
+              ),
+              rightButton: HeaderBarButton(
+                icon: Icon(
+                  Icons.add_outlined,
+                  size: 24,
+                  color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                ),
+                onPress: () => _showAddModelDialog(context, ref),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,6 +123,10 @@ class ModelSettingsScreen extends ConsumerWidget {
                   ),
                 );
               },
+            ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

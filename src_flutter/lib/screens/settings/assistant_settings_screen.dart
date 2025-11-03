@@ -6,6 +6,7 @@ import '../../providers/assistant_assignments.dart';
 import '../../providers/assistant_provider.dart';
 import '../../models/assistant.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/header_bar.dart';
 
 class AssistantSettingsScreen extends ConsumerWidget {
   const AssistantSettingsScreen({super.key});
@@ -42,15 +43,30 @@ class AssistantSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final assistantsAsync = ref.watch(assistantsProvider);
     final assignmentsAsync = ref.watch(assistantAssignmentsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('助手设置'),
-        centerTitle: false,
-      ),
-      body: assistantsAsync.when(
+      backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            HeaderBar(
+              title: '助手设置',
+              leftButton: HeaderBarButton(
+                icon: Icon(
+                  Icons.arrow_back,
+                  size: 24,
+                  color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                ),
+                onPress: () => context.pop(),
+              ),
+            ),
+            Expanded(
+              child: assistantsAsync.when(
         data: (assistants) {
           if (assistants.isEmpty) {
             return _EmptyAssistants(onCreate: () async {
@@ -80,6 +96,10 @@ class AssistantSettingsScreen extends ConsumerWidget {
           message: '加载助手列表失败',
           onRetry: () => ref.invalidate(assistantsProvider),
           details: err.toString(),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

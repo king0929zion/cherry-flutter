@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../theme/tokens.dart';
 import '../../../widgets/settings_group.dart';
+import '../../../widgets/header_bar.dart';
 
 /// AboutScreen - 关于页面
 /// 像素级还原原项目UI和布局
@@ -25,17 +27,32 @@ class AboutScreen extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('关于'), // TODO: i18n
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.code, size: 24),
-            onPressed: () => _openUrl('https://github.com/CherryHQ/cherry-studio-app'),
-          ),
-        ],
-      ),
-      body: ListView(
+      backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            HeaderBar(
+              title: '关于',
+              leftButton: HeaderBarButton(
+                icon: Icon(
+                  Icons.arrow_back,
+                  size: 24,
+                  color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                ),
+                onPress: () => context.pop(),
+              ),
+              rightButton: HeaderBarButton(
+                icon: Icon(
+                  Icons.code,
+                  size: 24,
+                  color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                ),
+                onPress: () => _openUrl('https://github.com/CherryHQ/cherry-studio-app'),
+              ),
+            ),
+            Expanded(
+              child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           // Logo 和描述
@@ -192,6 +209,10 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
             const Icon(Icons.arrow_outward, size: 16),
+          ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

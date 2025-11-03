@@ -3,9 +3,11 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/user_settings.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/header_bar.dart';
 
 class PersonalSettingsScreen extends ConsumerStatefulWidget {
   const PersonalSettingsScreen({super.key});
@@ -46,11 +48,24 @@ class _PersonalSettingsScreenState extends ConsumerState<PersonalSettingsScreen>
     final avatarBytes = user.avatarBytes;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('个人资料'),
-        centerTitle: false,
-      ),
-      body: SingleChildScrollView(
+      backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            HeaderBar(
+              title: '个人资料',
+              leftButton: HeaderBarButton(
+                icon: Icon(
+                  Icons.arrow_back,
+                  size: 24,
+                  color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                ),
+                onPress: () => context.pop(),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,6 +171,10 @@ class _PersonalSettingsScreenState extends ConsumerState<PersonalSettingsScreen>
               style: theme.textTheme.bodySmall?.copyWith(
                 color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
                 height: 1.45,
+              ),
+            ),
+          ],
+                ),
               ),
             ),
           ],

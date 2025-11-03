@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/provider_settings.dart';
 import '../../providers/model_provider.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/model_selector.dart';
+import '../../widgets/header_bar.dart';
 import '../../models/model.dart';
 
 class ProvidersSettingsScreen extends ConsumerStatefulWidget {
@@ -95,17 +97,34 @@ class _ProvidersSettingsScreenState extends ConsumerState<ProvidersSettingsScree
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('供应商设置'),
-        centerTitle: false,
-        actions: [
-          TextButton(
-            onPressed: _save,
-            child: const Text('保存'),
-          ),
-        ],
-      ),
-      body: ListView(
+      backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            HeaderBar(
+              title: '供应商设置',
+              leftButton: HeaderBarButton(
+                icon: Icon(
+                  Icons.arrow_back,
+                  size: 24,
+                  color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                ),
+                onPress: () => context.pop(),
+              ),
+              rightButton: HeaderBarButton(
+                icon: Text(
+                  '保存',
+                  style: TextStyle(
+                    color: Tokens.brand,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onPress: _save,
+              ),
+            ),
+            Expanded(
+              child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
         children: [
           _SummaryCard(
@@ -189,7 +208,11 @@ class _ProvidersSettingsScreenState extends ConsumerState<ProvidersSettingsScree
               ),
             ),
           ),
-        ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/built_in_assistants.dart';
 import '../../models/assistant.dart';
@@ -7,10 +8,12 @@ import '../../theme/tokens.dart';
 import '../../widgets/loading_indicator.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_view.dart';
+import '../../widgets/header_bar.dart';
 import '../assistant/widgets/assistant_market_card.dart';
 import '../assistant/widgets/assistant_market_sheet.dart';
 
-/// HeaderBar - 匹配原项目的HeaderBar组件
+/// Removed local _HeaderBar - using common HeaderBar widget
+/*
 class _HeaderBar extends StatelessWidget {
   final String title;
 
@@ -58,6 +61,7 @@ class _HeaderBar extends StatelessWidget {
     );
   }
 }
+*/
 
 class AssistantMarketScreen extends ConsumerStatefulWidget {
   const AssistantMarketScreen({super.key});
@@ -112,13 +116,24 @@ class _AssistantMarketScreenState extends ConsumerState<AssistantMarketScreen> {
         final theme = Theme.of(context);
         final isDark = theme.brightness == Brightness.dark;
         
-        return Scaffold(
-          backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
-          body: SafeArea(
-            child: Column(
-              children: [
-                // HeaderBar - 匹配原项目
-                _HeaderBar(title: '助手市场'),
+    return Scaffold(
+      backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // HeaderBar - 使用通用组件
+            HeaderBar(
+              title: '助手市场',
+              leftButton: HeaderBarButton(
+                icon: Icon(
+                  Icons.arrow_back,
+                  size: 24,
+                  color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                ),
+                onPress: () => context.pop(),
+              ),
+            ),
                 // Container - 匹配原项目：py-0 gap-2.5
                 Expanded(
                   child: Padding(
