@@ -130,26 +130,22 @@ class _ToolCallBlockViewState extends ConsumerState<ToolCallBlockView>
     IconData icon;
     Color color;
 
-    switch (toolCall.status) {
-      case ToolCallStatus.pending:
-        icon = Icons.hourglass_empty;
-        color = isDark ? Tokens.yellowDark100 : Tokens.yellow100;
-        break;
-      case ToolCallStatus.inProgress:
-        icon = Icons.refresh;
-        color = isDark ? Tokens.blueDark100 : Tokens.blue100;
-        break;
-      case ToolCallStatus.done:
-        icon = Icons.check_circle;
-        color = isDark ? Tokens.greenDark100 : Tokens.green100;
-        break;
-      case ToolCallStatus.error:
-        icon = Icons.error;
-        color = isDark ? Tokens.red100 : Tokens.red100;
-        break;
+    final status = toolCall.status;
+    if (status == model.ToolCallStatus.pending) {
+      icon = Icons.hourglass_empty;
+      color = isDark ? Tokens.yellowDark100 : Tokens.yellow100;
+    } else if (status == model.ToolCallStatus.inProgress) {
+      icon = Icons.refresh;
+      color = isDark ? Tokens.blueDark100 : Tokens.blue100;
+    } else if (status == model.ToolCallStatus.done) {
+      icon = Icons.check_circle;
+      color = isDark ? Tokens.greenDark100 : Tokens.green100;
+    } else {
+      icon = Icons.error;
+      color = isDark ? Tokens.red100 : Tokens.red100;
     }
 
-    if (toolCall.status == ToolCallStatus.inProgress) {
+    if (status == model.ToolCallStatus.inProgress) {
       return SizedBox(
         width: 20,
         height: 20,

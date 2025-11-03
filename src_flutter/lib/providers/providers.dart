@@ -12,3 +12,6 @@ export 'assistant_assignments.dart';
 export 'built_in_assistants.dart';
 export 'model_provider.dart';
 export 'locale.dart';
+
+// 导出服务相关的providers
+export '../services/block_service.dart' show blockServiceProvider, translationBlockProvider, attachmentsProvider;

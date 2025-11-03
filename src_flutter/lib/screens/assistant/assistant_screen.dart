@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../services/assistant_service.dart';
+import '../../providers/assistant_provider.dart';
 import '../../models/assistant.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/emoji_avatar.dart';
@@ -152,12 +152,12 @@ class _AssistantCard extends StatelessWidget {
               ),
               
               // 底部标签（如果有）
-              if (assistant.tags != null && assistant.tags.isNotEmpty)
+              if (assistant.tags != null && assistant.tags!.isNotEmpty)
                 Wrap(
                   spacing: 4,
-                  children: (assistant.tags as List)
+                  children: assistant.tags!
                       .take(2)
-                      .map((tag) => _buildTag(tag.toString(), isDark))
+                      .map((tag) => _buildTag(tag, isDark))
                       .toList(),
                 ),
             ],

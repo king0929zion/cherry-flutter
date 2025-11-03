@@ -3,6 +3,9 @@ import '../models/model.dart';
 import '../services/model_service.dart';
 import '../providers/provider_settings.dart';
 
+// 导出modelServiceProvider供其他文件使用
+export '../services/model_service.dart' show modelServiceProvider;
+
 final modelsProvider = FutureProvider<List<AIModel>>((ref) async {
   final settings = ref.watch(providerSettingsProvider);
   final service = ref.read(modelServiceProvider);

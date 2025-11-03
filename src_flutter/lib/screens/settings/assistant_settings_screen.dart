@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../providers/assistant_assignments.dart';
-import '../../services/assistant_service.dart';
+import '../../providers/assistant_provider.dart';
+import '../../models/assistant.dart';
 import '../../theme/tokens.dart';
 
 class AssistantSettingsScreen extends ConsumerWidget {
@@ -53,7 +54,7 @@ class AssistantSettingsScreen extends ConsumerWidget {
         data: (assistants) {
           if (assistants.isEmpty) {
             return _EmptyAssistants(onCreate: () async {
-              await ref.read(assistantServiceProvider).createAssistant();
+              await ref.read(assistantServiceProvider).createAssistant(name: '新助手', prompt: '');
               ref.invalidate(assistantsProvider);
             });
           }
@@ -87,7 +88,7 @@ class AssistantSettingsScreen extends ConsumerWidget {
   Widget _buildContent(
     BuildContext context,
     WidgetRef ref,
-    List<Assistant> assistants,
+    List<AssistantModel> assistants,
     Map<String, String?> assignments,
   ) {
     final theme = Theme.of(context);
@@ -170,7 +171,7 @@ class AssistantSettingsScreen extends ConsumerWidget {
 
 class _AssistantRoleTile extends StatelessWidget {
   final _AssistantRoleConfig config;
-  final List<Assistant> assistants;
+  final List<AssistantModel> assistants;
   final String? currentId;
   final ValueChanged<String> onSelect;
   final ValueChanged<String> onManage;
@@ -356,7 +357,7 @@ class _AssistantRoleTile extends StatelessWidget {
     );
   }
 
-  Assistant? _findCurrent() {
+  AssistantModel? _findCurrent() {
     if (currentId == null) return null;
     for (final assistant in assistants) {
       if (assistant.id == currentId) return assistant;

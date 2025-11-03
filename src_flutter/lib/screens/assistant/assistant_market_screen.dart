@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/built_in_assistants.dart';
-import '../../services/assistant_service.dart';
+import '../../models/assistant.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/loading_indicator.dart';
 import '../../widgets/empty_state.dart';
@@ -27,7 +27,7 @@ class _AssistantMarketScreenState extends ConsumerState<AssistantMarketScreen> {
     super.dispose();
   }
 
-  List<Assistant> _filter(List<Assistant> assistants) {
+  List<AssistantModel> _filter(List<AssistantModel> assistants) {
     final query = _keyword.trim().toLowerCase();
     if (query.isEmpty) return assistants;
     return assistants.where((assistant) {
@@ -42,7 +42,7 @@ class _AssistantMarketScreenState extends ConsumerState<AssistantMarketScreen> {
     }).toList();
   }
 
-  Future<void> _openAssistant(BuildContext context, Assistant assistant) async {
+  Future<void> _openAssistant(BuildContext context, AssistantModel assistant) async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -76,7 +76,7 @@ class _AssistantMarketScreenState extends ConsumerState<AssistantMarketScreen> {
                   duration: const Duration(milliseconds: 250),
                   child: filtered.isEmpty
                       ? EmptyState(
-                          icon: Icons.shelves,
+                          icon: Icons.search_off,
                           title: '未找到匹配的助手',
                           description: '试试更换关键词或查看其他分类',
                         )

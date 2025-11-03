@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../services/assistant_service.dart';
-import '../../../services/topic_service.dart';
+import '../../../providers/assistant_provider.dart';
+import '../../../providers/topic_provider.dart';
+import '../../../models/assistant.dart';
 import '../../../theme/tokens.dart';
 import '../../../widgets/settings_group.dart';
 
 class AssistantMarketSheet extends ConsumerStatefulWidget {
-  final Assistant assistant;
+  final AssistantModel assistant;
 
   const AssistantMarketSheet({super.key, required this.assistant});
 
@@ -24,7 +25,7 @@ class _AssistantMarketSheetState extends ConsumerState<AssistantMarketSheet> {
     setState(() => _isProcessing = true);
     try {
       final svc = ref.read(assistantServiceProvider);
-      await svc.importBuiltInAssistant(widget.assistant);
+      await svc.importBuiltInAssistant(widget.assistant as AssistantModel);
       ref.invalidate(assistantsProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -48,7 +49,7 @@ class _AssistantMarketSheetState extends ConsumerState<AssistantMarketSheet> {
     try {
       final svc = ref.read(assistantServiceProvider);
       final topicSvc = ref.read(topicServiceProvider);
-      final newAssistant = await svc.importBuiltInAssistant(widget.assistant);
+      final newAssistant = await svc.importBuiltInAssistant(widget.assistant as AssistantModel);
       ref.invalidate(assistantsProvider);
       final topic = await topicSvc.createTopic(
         assistantId: newAssistant.id,
@@ -218,7 +219,7 @@ class _AssistantMarketSheetState extends ConsumerState<AssistantMarketSheet> {
                             ],
                           ),
                         ),
-                      if ((widget.assistant.prompt?.isNotEmpty ?? false))
+                      if (widget.assistant.prompt.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 24),
                           child: SettingsGroup(

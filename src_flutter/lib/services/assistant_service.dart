@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:uuid/uuid.dart';
 import '../data/boxes.dart';
 import '../models/assistant.dart';
@@ -36,8 +35,8 @@ class AssistantService {
     bool enableGenerateImage = false,
     String? mcpServers,
     String? knowledgeRecognition,
-    String? tags,
-    String? group,
+    List<String>? tags,
+    List<String>? group,
     String? websearchProviderId,
   }) async {
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -80,8 +79,8 @@ class AssistantService {
     bool? enableGenerateImage,
     String? mcpServers,
     String? knowledgeRecognition,
-    String? tags,
-    String? group,
+    List<String>? tags,
+    List<String>? group,
     String? websearchProviderId,
   }) async {
     final box = HiveBoxes.getAssistantsBox();
@@ -210,7 +209,51 @@ class AssistantService {
     return assistants.where((assistant) {
       return assistant.name.toLowerCase().contains(lowerQuery) ||
              (assistant.description?.toLowerCase().contains(lowerQuery) ?? false) ||
-             (assistant.group?.toLowerCase().contains(lowerQuery) ?? false);
+             ((assistant.group ?? const []).any((g) => g.toLowerCase().contains(lowerQuery))) ||
+             ((assistant.tags ?? const []).any((t) => t.toLowerCase().contains(lowerQuery)));
     }).toList();
+  }
+
+  // Compatibility methods expected by some screens
+  Future<List<AssistantModel>> getAssistants() async => getAllAssistants();
+
+  Future<void> saveAssistants(List<AssistantModel> list) async {
+    final box = HiveBoxes.getAssistantsBox();
+    for (final a in list) {
+      await box.put(a.id, a);
+    }
+  }
+
+  Future<AssistantModel?> getAssistant(String id) async => getAssistantById(id);
+
+  // Assign assistants to roles and read assignments (stored in prefs box)
+  static const assignmentKeys = {
+    'default': 'assistant.role.default',
+    'quick': 'assistant.role.quick',
+    'translate': 'assistant.role.translate',
+  };
+
+  Future<void> assign(String role, String assistantId) async {
+    final prefs = Boxes.prefs;
+    final key = assignmentKeys[role] ?? 'assistant.role.$role';
+    await prefs.put(key, assistantId);
+  }
+
+  Future<Map<String, String?>> readAssignments() async {
+    final prefs = Boxes.prefs;
+    final result = <String, String?>{};
+    for (final entry in assignmentKeys.entries) {
+      result[entry.key] = prefs.get(entry.value) as String?;
+    }
+    return result;
+  }
+
+  Future<AssistantModel> importBuiltInAssistant(AssistantModel assistant) async {
+    final box = HiveBoxes.getAssistantsBox();
+    // If already exists, just return it
+    final existed = box.get(assistant.id);
+    if (existed != null) return existed;
+    await box.put(assistant.id, assistant);
+    return assistant;
   }
 }

@@ -7,13 +7,14 @@ final assistantServiceProvider = Provider<AssistantService>((ref) {
   return AssistantService();
 });
 
-// 所有助手提供者
-final assistantsProvider = Provider<List<AssistantModel>>((ref) {
+// 所有助手提供者（异步，保证内置助手初始化）
+final assistantsProvider = FutureProvider<List<AssistantModel>>((ref) async {
   final service = ref.watch(assistantServiceProvider);
+  await service.initializeBuiltInAssistants();
   return service.getAllAssistants();
 });
 
-// 内置助手提供者
+// 内置助手提供者（保留，返回同步列表）
 final builtInAssistantsProvider = Provider<List<AssistantModel>>((ref) {
   final service = ref.watch(assistantServiceProvider);
   return service.getBuiltInAssistants();
@@ -67,8 +68,8 @@ class AssistantNotifier extends StateNotifier<AsyncValue<List<AssistantModel>>> 
     bool enableGenerateImage = false,
     String? mcpServers,
     String? knowledgeRecognition,
-    String? tags,
-    String? group,
+    List<String>? tags,
+    List<String>? group,
     String? websearchProviderId,
   }) async {
     try {
@@ -107,8 +108,8 @@ class AssistantNotifier extends StateNotifier<AsyncValue<List<AssistantModel>>> 
     bool? enableGenerateImage,
     String? mcpServers,
     String? knowledgeRecognition,
-    String? tags,
-    String? group,
+    List<String>? tags,
+    List<String>? group,
     String? websearchProviderId,
   }) async {
     try {

@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'dart:convert';
 
 @HiveType(typeId: 2)
 class AssistantModel extends HiveObject {
@@ -42,10 +43,10 @@ class AssistantModel extends HiveObject {
   String? knowledgeRecognition;
   
   @HiveField(13)
-  String? tags; // JSON array string
+  List<String>? tags;
   
   @HiveField(14)
-  String? group;
+  List<String>? group;
   
   @HiveField(15)
   String? websearchProviderId;
@@ -78,10 +79,32 @@ class AssistantModel extends HiveObject {
   });
 
   factory AssistantModel.fromJson(Map<String, dynamic> json) {
+    List<String>? _parseList(dynamic v) {
+      if (v == null) return null;
+      if (v is List) {
+        return v.map((e) => e.toString()).toList();
+      }
+      if (v is String) {
+        // try JSON decode first, else split by commas
+        try {
+          final decoded = jsonDecode(v);
+          if (decoded is List) {
+            return decoded.map((e) => e.toString()).toList();
+          }
+        } catch (_) {}
+        return v
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+      }
+      return null;
+    }
+
     return AssistantModel(
       id: json['id'] as String,
       name: json['name'] as String,
-      prompt: json['prompt'] as String,
+      prompt: (json['prompt'] ?? '') as String,
       type: json['type'] as String? ?? 'built_in',
       emoji: json['emoji'] as String?,
       description: json['description'] as String?,
@@ -92,8 +115,8 @@ class AssistantModel extends HiveObject {
       enableGenerateImage: json['enable_generate_image'] as bool? ?? false,
       mcpServers: json['mcp_servers'] as String?,
       knowledgeRecognition: json['knowledge_recognition'] as String?,
-      tags: json['tags'] as String?,
-      group: json['group'] as String?,
+      tags: _parseList(json['tags']),
+      group: _parseList(json['group']),
       websearchProviderId: json['websearch_provider_id'] as String?,
       createdAt: json['created_at'] as int? ?? DateTime.now().millisecondsSinceEpoch,
       updatedAt: json['updated_at'] as int? ?? DateTime.now().millisecondsSinceEpoch,
@@ -137,8 +160,8 @@ class AssistantModel extends HiveObject {
     bool? enableGenerateImage,
     String? mcpServers,
     String? knowledgeRecognition,
-    String? tags,
-    String? group,
+    List<String>? tags,
+    List<String>? group,
     String? websearchProviderId,
     int? createdAt,
     int? updatedAt,

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../services/assistant_service.dart';
+import '../../providers/assistant_provider.dart';
+import '../../models/assistant.dart';
 import '../../widgets/emoji_avatar.dart';
 import '../../widgets/settings_group.dart';
 
@@ -28,7 +29,7 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen> {
     super.dispose();
   }
 
-  Future<void> _saveAssistant(Assistant assistant) async {
+  Future<void> _saveAssistant(AssistantModel assistant) async {
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('名称不能为空')),
@@ -78,7 +79,7 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen> {
           );
         }
         
-        final assistant = snap.data as Assistant?;
+        final assistant = snap.data as AssistantModel?;
         if (assistant == null) {
           return Scaffold(
             appBar: AppBar(title: const Text('助手详情')),
@@ -89,7 +90,7 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen> {
         // 初始化控制器
         if (_nameController.text.isEmpty) {
           _nameController.text = assistant.name;
-          _promptController.text = assistant.prompt ?? '';
+          _promptController.text = assistant.prompt;
           _selectedEmoji = assistant.emoji ?? '🤖';
         }
 

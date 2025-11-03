@@ -4,10 +4,10 @@ import 'package:flutter/services.dart';
 
 import '../../providers/app_state.dart';
 import '../../providers/streaming.dart';
-import '../../services/assistant_service.dart';
+import '../../providers/assistant_provider.dart';
+import '../../providers/message_provider.dart';
+import '../../providers/topic_provider.dart';
 import '../../services/block_service.dart';
-import '../../services/message_service.dart';
-import '../../services/topic_service.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/message_input.dart';
 import '../../models/block.dart';
@@ -29,15 +29,8 @@ class ChatScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final effectiveTopic = topicId == 'default'
-        ? ref.watch(currentTopicProvider).maybeWhen(data: (t) => t.id, orElse: () => null)
-        : topicId;
-
-    if (effectiveTopic == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    final messages = ref.watch(messagesProvider(effectiveTopic));
+    final effectiveTopic = topicId; // 'default' will be ensured in provider
+    final messagesAsync = ref.watch(messageNotifierProvider(effectiveTopic));
     final streamingMap = ref.watch(streamingProvider);
     final isStreaming = streamingMap.containsKey(effectiveTopic);
     final topicAsync = ref.watch(topicDetailsProvider(effectiveTopic));
@@ -89,7 +82,7 @@ class ChatScreen extends ConsumerWidget {
                   ),
                 ),
               Expanded(
-                child: messages.when(
+                child: messagesAsync.when(
                   data: (list) => ListView.builder(
                     padding: const EdgeInsets.all(12),
                     itemCount: list.length,
@@ -151,12 +144,12 @@ class ChatScreen extends ConsumerWidget {
                                             topicId: effectiveTopic,
                                             ref: ref,
                                           );
-                                      ref.invalidate(messagesProvider(effectiveTopic));
+                                      ref.invalidate(messageNotifierProvider(effectiveTopic));
                                     }
                                   : null,
                               onDelete: () async {
                                 await ref.read(messageServiceProvider).deleteMessage(m.id);
-                                ref.invalidate(messagesProvider(effectiveTopic));
+                                ref.invalidate(messageNotifierProvider(effectiveTopic));
                               },
                             ),
                             Consumer(builder: (context, ref, _) {
@@ -245,7 +238,7 @@ class ChatScreen extends ConsumerWidget {
                     attachments: attachments,
                     mentions: mentions,
                   );
-                  ref.invalidate(messagesProvider(topic.id));
+                  ref.invalidate(messageNotifierProvider(topic.id));
                 },
               ),
             ],

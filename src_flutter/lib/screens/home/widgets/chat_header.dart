@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../data/boxes.dart';
-import '../../../services/topic_service.dart';
+import '../../../providers/topic_provider.dart';
+import '../../../providers/assistant_provider.dart';
 import '../../../theme/tokens.dart';
 import '../../../widgets/app_shell.dart';
+import '../../../models/topic.dart';
+import '../../../models/assistant.dart';
 
 /// ChatHeader - 聊天页面头部
 /// 完全复刻原项目的布局:
@@ -23,6 +25,8 @@ class ChatHeader extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final topicAsync = ref.watch(topicProvider(topicId));
+    final assistantsAsync = ref.watch(assistantsProvider);
     
     return Container(
       height: 44,
@@ -36,49 +40,83 @@ class ChatHeader extends ConsumerWidget implements PreferredSizeWidget {
           ),
         ),
       ),
-      child: Row(
-        children: [
-          // 左侧: 菜单按钮
-          SizedBox(
-            width: 40, // min-w-10
-            child: IconButton(
-              icon: const Icon(Icons.menu, size: 24),
-              padding: EdgeInsets.zero,
-              onPressed: () {
-                final shell = context.appShell;
-                if (shell != null) {
-                  shell.openDrawer();
-                } else {
-                  Scaffold.maybeOf(context)?.openDrawer();
-                }
-              },
-            ),
-          ),
-          
-          // 中间: 助手选择器(可展开,占据剩余空间)
-          Expanded(
-            child: Center(
-              child: _AssistantSelection(topicId: topicId),
-            ),
-          ),
-          
-          // 右侧: 新建主题按钮
-          SizedBox(
-            width: 40, // min-w-10
-            child: IconButton(
-              icon: const Icon(Icons.add_comment_outlined, size: 24),
-              padding: EdgeInsets.zero,
-              onPressed: () async {
-                final t = await ref.read(topicServiceProvider).createTopic(
-                      assistantId: 'default',
-                      name: '新对话',
-                    );
-                if (context.mounted) context.go('/home/chat/${t.id}');
-              },
-              tooltip: '新建主题', // TODO: i18n
-            ),
-          ),
-        ],
+      child: topicAsync.when(
+        data: (topic) {
+          final assistantAsync = ref.watch(assistantProvider(topic.assistantId));
+          return assistantAsync.when(
+            data: (assistant) {
+              if (assistant == null) {
+                return const SizedBox.shrink();
+              }
+              return Row(
+                children: [
+                  // 左侧: 菜单按钮
+                  SizedBox(
+                    width: 40, // min-w-10
+                    child: IconButton(
+                      icon: const Icon(Icons.menu, size: 24),
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        final shell = context.appShell;
+                        if (shell != null) {
+                          shell.openDrawer();
+                        } else {
+                          Scaffold.maybeOf(context)?.openDrawer();
+                        }
+                      },
+                    ),
+                  ),
+                  
+                  // 中间: 助手选择器(可展开,占据剩余空间)
+                  Expanded(
+                    child: Center(
+                      child: _AssistantSelection(
+                        topic: topic,
+                        assistant: assistant,
+                        assistantsAsync: assistantsAsync,
+                      ),
+                    ),
+                  ),
+                  
+                  // 右侧: 新建主题按钮
+                  SizedBox(
+                    width: 40, // min-w-10
+                    child: IconButton(
+                      icon: const Icon(Icons.add_comment_outlined, size: 24),
+                      padding: EdgeInsets.zero,
+                      onPressed: () async {
+                        final assistants = assistantsAsync.maybeWhen(
+                          data: (list) => list,
+                          orElse: () => <AssistantModel>[],
+                        );
+                        final defaultAssistant = assistants.isNotEmpty 
+                          ? assistants.first 
+                          : AssistantModel(
+                              id: 'default',
+                              name: '默认助手',
+                              prompt: '',
+                              type: 'built_in',
+                              createdAt: DateTime.now().millisecondsSinceEpoch,
+                              updatedAt: DateTime.now().millisecondsSinceEpoch,
+                            );
+                        final t = await ref.read(topicServiceProvider).createTopic(
+                              assistantId: defaultAssistant.id,
+                              name: '新对话',
+                            );
+                        if (context.mounted) context.go('/home/chat/${t.id}');
+                      },
+                      tooltip: '新建主题',
+                    ),
+                  ),
+                ],
+              );
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          );
+        },
+        loading: () => const SizedBox.shrink(),
+        error: (_, __) => const SizedBox.shrink(),
       ),
     );
   }
@@ -86,33 +124,24 @@ class ChatHeader extends ConsumerWidget implements PreferredSizeWidget {
 
 /// AssistantSelection - 助手选择器组件
 /// 显示助手名称和主题名称,点击可展开选择其他助手
-class _AssistantSelection extends StatelessWidget {
-  final String topicId;
+class _AssistantSelection extends ConsumerWidget {
+  final TopicModel topic;
+  final AssistantModel assistant;
+  final AsyncValue<List<AssistantModel>> assistantsAsync;
   
-  const _AssistantSelection({required this.topicId});
+  const _AssistantSelection({
+    required this.topic,
+    required this.assistant,
+    required this.assistantsAsync,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     
-    // 获取主题信息
-    final topicData = Boxes.topics.get(topicId);
-    if (topicData == null) {
-      return const SizedBox.shrink();
-    }
-    
-    final topic = Map<String, dynamic>.from(topicData as Map);
-    final topicName = topic['name'] as String? ?? '新对话';
-    
-    // TODO: 获取助手信息
-    final assistantName = '默认助手'; // 从 assistantId 获取
-    
-    return InkWell(
-      onTap: () {
-        // TODO: 显示助手选择器 BottomSheet
-        _showAssistantSelector(context);
-      },
-      borderRadius: BorderRadius.circular(8),
+    return GestureDetector(
+      onTap: () => _showAssistantSelector(context, ref),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         child: Column(
@@ -120,9 +149,10 @@ class _AssistantSelection extends StatelessWidget {
           children: [
             // 助手名称
             Text(
-              assistantName,
+              assistant.name,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.normal,
+                color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -130,7 +160,7 @@ class _AssistantSelection extends StatelessWidget {
             const SizedBox(height: 2), // gap-0.5
             // 主题名称
             Text(
-              topicName,
+              topic.name,
               style: theme.textTheme.bodySmall?.copyWith(
                 fontSize: 11,
                 color: Tokens.gray60,
@@ -144,47 +174,83 @@ class _AssistantSelection extends StatelessWidget {
     );
   }
   
-  void _showAssistantSelector(BuildContext context) {
+  void _showAssistantSelector(BuildContext context, WidgetRef ref) {
+    final assistants = assistantsAsync.maybeWhen(
+      data: (list) => list,
+      orElse: () => <AssistantModel>[],
+    );
+    
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(ctx).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '选择助手', // TODO: i18n
-                style: Theme.of(ctx).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: Tokens.brand.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Center(
-                    child: Text('🤖', style: TextStyle(fontSize: 20)),
-                  ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  '选择助手',
+                  style: Theme.of(ctx).textTheme.titleLarge,
                 ),
-                title: const Text('默认助手'),
-                subtitle: const Text('通用对话助手'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  // TODO: 切换助手
-                },
               ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  context.go('/assistant');
-                },
-                child: const Text('查看全部助手'),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: assistants.length + 1,
+                  itemBuilder: (ctx, index) {
+                    if (index == assistants.length) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            context.go('/assistant');
+                          },
+                          child: const Text('查看全部助手'),
+                        ),
+                      );
+                    }
+                    final item = assistants[index];
+                    final isSelected = item.id == assistant.id;
+                    return ListTile(
+                      leading: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Tokens.brand.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Center(
+                          child: Text(
+                            item.emoji ?? '🤖',
+                            style: const TextStyle(fontSize: 20),
+                          ),
+                        ),
+                      ),
+                      title: Text(item.name),
+                      subtitle: item.description != null ? Text(item.description!) : null,
+                      trailing: isSelected 
+                        ? Icon(Icons.check, color: Tokens.brand)
+                        : null,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        if (item.id != assistant.id) {
+                          ref.read(topicServiceProvider).updateTopic(
+                            topic.id,
+                            assistantId: item.id,
+                          );
+                        }
+                      },
+                    );
+                  },
+                ),
               ),
             ],
           ),

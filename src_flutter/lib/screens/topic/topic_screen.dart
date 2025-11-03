@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../providers/topic_provider.dart';
+import '../../providers/assistant_provider.dart';
 import '../../services/topic_service.dart';
-import '../../services/assistant_service.dart';
 import '../../models/topic.dart';
 import '../../models/assistant.dart';
 import '../../widgets/topic_item.dart';
@@ -75,7 +76,7 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final topicsAsync = ref.watch(topicsProvider);
+    final topicsAsync = ref.watch(topicNotifierProvider);
     final assistantsAsync = ref.watch(assistantsProvider);
     final topicService = ref.read(topicServiceProvider);
 
@@ -109,7 +110,7 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
         error: (error, stack) => ErrorView(
           message: '加载主题失败',
           details: error.toString(),
-          onRetry: () => ref.invalidate(topicsProvider),
+          onRetry: () => ref.invalidate(topicNotifierProvider),
         ),
             data: (topics) {
           final filtered = _filter(topics);
@@ -121,7 +122,7 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
                 description: '点击右上角按钮创建新的会话',
                 actionLabel: '创建新主题',
                 onAction: () async {
-                  final newTopic = await topicService.createTopic();
+                  final newTopic = await topicService.createTopic(assistantId: 'default', name: '新对话');
                   if (context.mounted) context.go('/home/chat/${newTopic.id}');
                 },
               );

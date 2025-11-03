@@ -2,11 +2,11 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import '../../../services/assistant_service.dart';
+import '../../../models/assistant.dart';
 import '../../../theme/tokens.dart';
 
 class AssistantMarketCard extends StatelessWidget {
-  final Assistant assistant;
+  final AssistantModel assistant;
   final VoidCallback onTap;
 
   const AssistantMarketCard({
@@ -91,7 +91,7 @@ class AssistantMarketCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Expanded(
                       child: Text(
-                        assistant.description ?? assistant.prompt ?? '',
+                        assistant.description ?? assistant.prompt,
                         style: theme.textTheme.bodySmall?.copyWith(
                           height: 1.35,
                           color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,

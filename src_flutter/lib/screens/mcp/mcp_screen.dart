@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../models/mcp.dart';
 import '../../services/mcp_service.dart';
+import '../../providers/mcp_settings.dart';
+import '../../models/mcp.dart' as mcp_model;
 import '../../theme/tokens.dart';
 import '../../utils/ids.dart';
 import 'mcp_market_screen.dart';
@@ -16,7 +17,7 @@ class McpScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final serversAsync = ref.watch(mcpServersProvider);
+    final servers = ref.watch(mcpSettingsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -30,11 +31,7 @@ class McpScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: serversAsync.when(
-        data: (servers) => _buildContent(context, ref, servers, theme, isDark),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildError(context, theme, isDark, error.toString()),
-      ),
+      body: _buildContent(context, ref, servers, theme, isDark),
     );
   }
 
@@ -50,7 +47,9 @@ class McpScreen extends ConsumerWidget {
     }
 
     return RefreshIndicator(
-      onRefresh: () => ref.refresh(mcpServersProvider.future),
+      onRefresh: () async {
+        ref.refresh(mcpSettingsProvider);
+      },
       child: ListView.builder(
         padding: const EdgeInsets.all(20),
         itemCount: servers.length,
@@ -122,7 +121,7 @@ class McpScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildError(BuildContext context, ThemeData theme, bool isDark, String error) {
+  Widget _buildError(BuildContext context, WidgetRef ref, ThemeData theme, bool isDark, String error) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -151,7 +150,9 @@ class McpScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             OutlinedButton.icon(
-              onPressed: () => ref.refresh(mcpServersProvider.future),
+              onPressed: () {
+                ref.refresh(mcpSettingsProvider);
+              },
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('重试'),
             ),
@@ -162,9 +163,8 @@ class McpScreen extends ConsumerWidget {
   }
 
   Future<void> _toggleServerStatus(WidgetRef ref, McpServer server) async {
-    final service = ref.read(mcpServiceProvider);
-    await service.updateMcpServer(server.id, server.copyWith(isActive: !server.isActive));
-    ref.refresh(mcpServersProvider.future);
+    // TODO: Implement toggle logic with mcpSettingsProvider
+    ref.refresh(mcpSettingsProvider);
   }
 
   Future<void> _showDeleteDialog(BuildContext context, WidgetRef ref, McpServer server) async {
@@ -190,9 +190,7 @@ class McpScreen extends ConsumerWidget {
     );
 
     if (confirmed == true) {
-      final service = ref.read(mcpServiceProvider);
-      await service.deleteMcpServer(server.id);
-      ref.refresh(mcpServersProvider.future);
+      await ref.read(mcpSettingsProvider.notifier).remove(server.id);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('服务器已删除')),
@@ -203,7 +201,14 @@ class McpScreen extends ConsumerWidget {
 
   Future<void> _testConnection(BuildContext context, WidgetRef ref, McpServer server) async {
     final service = ref.read(mcpServiceProvider);
-    final isConnected = await service.testMcpServerConnection(server);
+    final mcpServer = mcp_model.McpServer(
+      id: server.id,
+      name: server.name,
+      description: null,
+      baseUrl: server.endpoint,
+      type: mcp_model.McpServerType.streamableHttp,
+    );
+    final isConnected = await service.testMcpServerConnection(mcpServer);
     
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -254,17 +259,13 @@ class _McpServerCard extends StatelessWidget {
                     height: 48,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      color: server.isActive
-                          ? (isDark ? Tokens.greenDark20 : Tokens.green10)
-                          : (isDark ? Tokens.gray20 : Tokens.gray10),
+                      color: (isDark ? Tokens.greenDark20 : Tokens.green10),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
-                      server.isActive ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
+                      Icons.cloud_done_outlined,
                       size: 24,
-                      color: server.isActive
-                          ? (isDark ? Tokens.greenDark100 : Tokens.green100)
-                          : (isDark ? Tokens.gray80 : Tokens.gray60),
+                      color: (isDark ? Tokens.greenDark100 : Tokens.green100),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -280,7 +281,7 @@ class _McpServerCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          server.description ?? '无描述',
+                          '无描述',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
                           ),
@@ -291,7 +292,7 @@ class _McpServerCard extends StatelessWidget {
                     ),
                   ),
                   Switch(
-                    value: server.isActive,
+                    value: true,
                     onChanged: (_) => onToggle(),
                   ),
                 ],
@@ -308,38 +309,10 @@ class _McpServerCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      server.baseUrl,
+                      server.endpoint,
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontFamily: 'monospace',
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: isDark ? Tokens.blueDark20 : Tokens.blue10,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            _getServerTypeDisplayName(server.type),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: isDark ? Tokens.blueDark100 : Tokens.blue100,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                        if (server.timeout != null) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            '超时: ${server.timeout}s',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
-                            ),
-                          ),
-                        ],
-                      ],
                     ),
                   ],
                 ),
@@ -374,16 +347,3 @@ class _McpServerCard extends StatelessWidget {
     );
   }
 
-  String _getServerTypeDisplayName(McpServerType type) {
-    switch (type) {
-      case McpServerType.streamableHttp:
-        return 'HTTP';
-      case McpServerType.sse:
-        return 'SSE';
-    }
-  }
-}
-
-final mcpServersProvider = FutureProvider<List<McpServer>>((ref) async {
-  return ref.read(mcpServiceProvider).getMcpServers();
-});
