@@ -53,137 +53,141 @@ class AboutScreen extends StatelessWidget {
             ),
             Expanded(
               child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          // Logo 和描述
-          SettingsGroup(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Logo - 70x70, 圆角 41px
-                    Container(
-                      width: 70,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        color: Tokens.brand,
-                        borderRadius: BorderRadius.circular(41),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.favorite,
-                          size: 40,
-                          color: Colors.white,
+                padding: const EdgeInsets.all(20),
+                children: [
+                  // Logo 和描述
+                  SettingsGroup(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Logo - 70x70, 圆角 41px
+                            Container(
+                              width: 70,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                color: Tokens.brand,
+                                borderRadius: BorderRadius.circular(41),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.favorite,
+                                  size: 40,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16), // gap-4
+                            
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 4), // py-1
+                                  
+                                  // 标题 - 22px, bold
+                                  const Text(
+                                    'Cherry Studio',
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  
+                                  const SizedBox(height: 5), // gap-[5px]
+                                  
+                                  // 描述 - text-sm, secondary color
+                                  Text(
+                                    'AI 桌面客户端，支持多平台多模型', // TODO: i18n
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: isDark 
+                                        ? Tokens.textSecondaryDark 
+                                        : Tokens.textSecondaryLight,
+                                    ),
+                                  ),
+                                  
+                                  const SizedBox(height: 5),
+                                  
+                                  // 版本标签 - green badge
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, // px-2
+                                      vertical: 2, // py-0.5
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Tokens.greenDark10 : Tokens.green10,
+                                      border: Border.all(
+                                        color: isDark ? Tokens.greenDark20 : Tokens.green20,
+                                        width: 1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(25.37),
+                                    ),
+                                    child: Text(
+                                      'v$_version',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: isDark ? Tokens.greenDark100 : Tokens.green100,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16), // gap-4
-                    
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 4), // py-1
-                          
-                          // 标题 - 22px, bold
-                          const Text(
-                            'Cherry Studio',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          
-                          const SizedBox(height: 5), // gap-[5px]
-                          
-                          // 描述 - text-sm, secondary color
-                          Text(
-                            'AI 桌面客户端，支持多平台多模型', // TODO: i18n
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: isDark 
-                                ? Tokens.textSecondaryDark 
-                                : Tokens.textSecondaryLight,
-                            ),
-                          ),
-                          
-                          const SizedBox(height: 5),
-                          
-                          // 版本标签 - green badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8, // px-2
-                              vertical: 2, // py-0.5
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark ? Tokens.greenDark10 : Tokens.green10,
-                              border: Border.all(
-                                color: isDark ? Tokens.greenDark20 : Tokens.green20,
-                                width: 1,
-                              ),
-                              borderRadius: BorderRadius.circular(25.37),
-                            ),
-                            child: Text(
-                              'v$_version',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: isDark ? Tokens.greenDark100 : Tokens.green100,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+                    ],
+                  ),
 
-          const SizedBox(height: 24), // gap-6
+              const SizedBox(height: 24), // gap-6
 
-          // 链接列表
-          SettingsGroup(
-            children: [
-              _buildLinkItem(
-                icon: Icons.article_outlined,
-                title: '更新日志', // TODO: i18n
-                onTap: () => _openUrl('https://github.com/CherryHQ/cherry-studio-app/releases/'),
-                isDark: isDark,
+              // 链接列表
+              SettingsGroup(
+                children: [
+                  _buildLinkItem(
+                    icon: Icons.article_outlined,
+                    title: '更新日志', // TODO: i18n
+                    onTap: () => _openUrl('https://github.com/CherryHQ/cherry-studio-app/releases/'),
+                    isDark: isDark,
+                  ),
+                  _buildDivider(theme),
+                  _buildLinkItem(
+                    icon: Icons.public,
+                    title: '官方网站', // TODO: i18n
+                    onTap: () => _openUrl('https://www.cherry-ai.com/'),
+                    isDark: isDark,
+                  ),
+                  _buildDivider(theme),
+                  _buildLinkItem(
+                    icon: Icons.bug_report_outlined,
+                    title: '问题反馈', // TODO: i18n
+                    onTap: () => _openUrl('https://github.com/CherryHQ/cherry-studio-app/issues/'),
+                    isDark: isDark,
+                  ),
+                  _buildDivider(theme),
+                  _buildLinkItem(
+                    icon: Icons.copyright_outlined,
+                    title: '开源协议', // TODO: i18n
+                    onTap: () => _openUrl('https://github.com/CherryHQ/cherry-studio/blob/main/LICENSE/'),
+                    isDark: isDark,
+                  ),
+                  _buildDivider(theme),
+                  _buildLinkItem(
+                    icon: Icons.email_outlined,
+                    title: '联系我们', // TODO: i18n
+                    onTap: () => _openUrl('https://docs.cherry-ai.com/contact-us/questions/'),
+                    isDark: isDark,
+                  ),
+                ],
               ),
-              _buildDivider(theme),
-              _buildLinkItem(
-                icon: Icons.public,
-                title: '官方网站', // TODO: i18n
-                onTap: () => _openUrl('https://www.cherry-ai.com/'),
-                isDark: isDark,
+                ],
               ),
-              _buildDivider(theme),
-              _buildLinkItem(
-                icon: Icons.bug_report_outlined,
-                title: '问题反馈', // TODO: i18n
-                onTap: () => _openUrl('https://github.com/CherryHQ/cherry-studio-app/issues/'),
-                isDark: isDark,
-              ),
-              _buildDivider(theme),
-              _buildLinkItem(
-                icon: Icons.copyright_outlined,
-                title: '开源协议', // TODO: i18n
-                onTap: () => _openUrl('https://github.com/CherryHQ/cherry-studio/blob/main/LICENSE/'),
-                isDark: isDark,
-              ),
-              _buildDivider(theme),
-              _buildLinkItem(
-                icon: Icons.email_outlined,
-                title: '联系我们', // TODO: i18n
-                onTap: () => _openUrl('https://docs.cherry-ai.com/contact-us/questions/'),
-                isDark: isDark,
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
