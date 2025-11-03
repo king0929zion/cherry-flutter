@@ -7,55 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/user_settings.dart';
 import '../../theme/tokens.dart';
 import '../../i18n/app_localizations.dart';
-
-/// HeaderBar - 匹配原项目的HeaderBar组件
-class _HeaderBar extends StatelessWidget {
-  final String title;
-
-  const _HeaderBar({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    
-    // 匹配原项目：px-4 items-center h-[44px] justify-between
-    return Container(
-      height: 44, // h-[44px]
-      padding: const EdgeInsets.symmetric(horizontal: 16), // px-4
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween, // justify-between
-        crossAxisAlignment: CrossAxisAlignment.center, // items-center
-        children: [
-          // Left area - min-w-[40px]
-          SizedBox(
-            width: 40,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, size: 24),
-              onPressed: () => Navigator.of(context).pop(),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ),
-          // Title - text-[18px] font-bold text-center
-          Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontSize: 18, // text-[18px]
-                fontWeight: FontWeight.bold, // font-bold
-                color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
-              ),
-            ),
-          ),
-          // Right area - min-w-[40px]
-          const SizedBox(width: 40),
-        ],
-      ),
-    );
-  }
-}
+import '../../widgets/header_bar.dart';
 
 const double _kTileHPadding = 16;
 const double _kTileVPadding = 14;
@@ -139,10 +91,21 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             // HeaderBar - 匹配原项目：px-4 h-[44px]
-            _HeaderBar(title: l10n.settings),
+            HeaderBar(
+              title: l10n.settings,
+              leftButton: HeaderBarButton(
+                icon: Icon(
+                  Icons.arrow_back,
+                  size: 24,
+                  color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                ),
+                onPress: () => context.pop(),
+              ),
+            ),
             // Container - 匹配原项目：flex-1 p-4 gap-5
             Expanded(
               child: Padding(
