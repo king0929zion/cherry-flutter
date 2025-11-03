@@ -7,14 +7,40 @@ class McpServer {
   final String id;
   final String name;
   final String endpoint;
-  const McpServer({required this.id, required this.name, required this.endpoint});
+  final bool isActive;
+  const McpServer({
+    required this.id, 
+    required this.name, 
+    required this.endpoint,
+    this.isActive = true,
+  });
 
-  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'endpoint': endpoint};
+  Map<String, dynamic> toJson() => {
+    'id': id, 
+    'name': name, 
+    'endpoint': endpoint,
+    'isActive': isActive,
+  };
   static McpServer fromJson(Map m) => McpServer(
         id: m['id'] as String,
         name: m['name'] as String,
         endpoint: m['endpoint'] as String,
+        isActive: m['isActive'] as bool? ?? true,
       );
+  
+  McpServer copyWith({
+    String? id,
+    String? name,
+    String? endpoint,
+    bool? isActive,
+  }) {
+    return McpServer(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      endpoint: endpoint ?? this.endpoint,
+      isActive: isActive ?? this.isActive,
+    );
+  }
 }
 
 class McpSettingsNotifier extends Notifier<List<McpServer>> {
@@ -48,6 +74,16 @@ class McpSettingsNotifier extends Notifier<List<McpServer>> {
 
   Future<void> remove(String id) async {
     state = state.where((e) => e.id != id).toList();
+    await save();
+  }
+
+  Future<void> toggleActive(String id) async {
+    state = state.map((e) {
+      if (e.id == id) {
+        return e.copyWith(isActive: !e.isActive);
+      }
+      return e;
+    }).toList();
     await save();
   }
 }

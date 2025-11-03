@@ -163,8 +163,7 @@ class McpScreen extends ConsumerWidget {
   }
 
   Future<void> _toggleServerStatus(WidgetRef ref, McpServer server) async {
-    // TODO: Implement toggle logic with mcpSettingsProvider
-    ref.refresh(mcpSettingsProvider);
+    await ref.read(mcpSettingsProvider.notifier).toggleActive(server.id);
   }
 
   Future<void> _showDeleteDialog(BuildContext context, WidgetRef ref, McpServer server) async {
@@ -292,7 +291,7 @@ class _McpServerCard extends StatelessWidget {
                     ),
                   ),
                   Switch(
-                    value: true,
+                    value: server.isActive,
                     onChanged: (_) => onToggle(),
                   ),
                 ],
