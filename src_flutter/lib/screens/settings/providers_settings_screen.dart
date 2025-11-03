@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
 
 import '../../providers/provider_settings.dart';
 import '../../providers/model_provider.dart';
@@ -24,6 +25,7 @@ class _ProvidersSettingsScreenState extends ConsumerState<ProvidersSettingsScree
   late TextEditingController _apiKeyCtrl;
   double _temperature = 0.7;
   bool _obscureApiKey = true;
+  bool _isTesting = false;
 
   @override
   void initState() {
@@ -45,32 +47,82 @@ class _ProvidersSettingsScreenState extends ConsumerState<ProvidersSettingsScree
     super.dispose();
   }
 
+  bool _isValidUrl(String input) {
+    final uri = Uri.tryParse(input.trim());
+    if (uri == null) return false;
+    return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https') && uri.host.isNotEmpty;
+  }
+
   Future<void> _save() async {
+    final providerId = _providerIdCtrl.text.trim();
+    final baseUrl = _baseUrlCtrl.text.trim();
+    final model = _modelCtrl.text.trim();
+
+    if (providerId.isEmpty) {
+      _showSnack('Provider ID 不能为空');
+      return;
+    }
+    if (baseUrl.isEmpty || !_isValidUrl(baseUrl)) {
+      _showSnack('Base URL 不合法，请输入 http/https 开头的有效地址');
+      return;
+    }
+    if (model.isEmpty) {
+      _showSnack('默认模型不能为空');
+      return;
+    }
+
     final settings = ref.read(providerSettingsProvider);
     final notifier = ref.read(providerSettingsProvider.notifier);
 
     await notifier.update(
       settings.copyWith(
-        providerId: _providerIdCtrl.text.trim(),
-        baseUrl: _baseUrlCtrl.text.trim(),
-        model: _modelCtrl.text.trim(),
+        providerId: providerId,
+        baseUrl: baseUrl,
+        model: model,
         apiKey: _apiKeyCtrl.text.trim(),
         temperature: _temperature,
       ),
     );
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('设置已保存')),
-      );
+      _showSnack('设置已保存');
     }
   }
 
   Future<void> _testConnection() async {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已发送测试请求（模拟）')),
-      );
+    if (_isTesting) return;
+    final baseUrl = _baseUrlCtrl.text.trim();
+    if (!_isValidUrl(baseUrl)) {
+      _showSnack('请先填写合法的 Base URL');
+      return;
+    }
+
+    setState(() => _isTesting = true);
+    _showSnack('正在测试连接…');
+
+    try {
+      final dio = Dio(BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 8),
+        receiveTimeout: const Duration(seconds: 8),
+      ));
+      final apiKey = _apiKeyCtrl.text.trim();
+      if (apiKey.isNotEmpty) {
+        dio.options.headers['Authorization'] = 'Bearer $apiKey';
+      }
+      // 尝试访问根路径或 /models（常见列表接口），失败则回退根路径
+      Response res;
+      try {
+        res = await dio.get('/models');
+      } catch (_) {
+        res = await dio.get('/');
+      }
+      final ok = res.statusCode != null && res.statusCode! >= 200 && res.statusCode! < 400;
+      _showSnack(ok ? '连接成功' : '连接失败（HTTP ${res.statusCode ?? '未知'}）', ok: ok);
+    } catch (e) {
+      _showSnack('连接失败：$e');
+    } finally {
+      if (mounted) setState(() => _isTesting = false);
     }
   }
 
@@ -86,9 +138,18 @@ class _ProvidersSettingsScreenState extends ConsumerState<ProvidersSettingsScree
   void _copyApiKey() {
     Clipboard.setData(ClipboardData(text: _apiKeyCtrl.text));
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('API Key 已复制')));
+      _showSnack('API Key 已复制');
     }
+  }
+
+  void _showSnack(String text, {bool ok = true}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text),
+        backgroundColor: ok ? (Theme.of(context).brightness == Brightness.dark ? Tokens.greenDark100 : Tokens.green100) : Theme.of(context).colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -169,9 +230,15 @@ class _ProvidersSettingsScreenState extends ConsumerState<ProvidersSettingsScree
                     runSpacing: 12,
                     children: [
                       OutlinedButton.icon(
-                        onPressed: _testConnection,
-                        icon: const Icon(Icons.bolt_outlined, size: 18),
-                        label: const Text('测试连接'),
+                        onPressed: _isTesting ? null : _testConnection,
+                        icon: _isTesting
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.bolt_outlined, size: 18),
+                        label: Text(_isTesting ? '测试中…' : '测试连接'),
                       ),
                       OutlinedButton.icon(
                         onPressed: () {
