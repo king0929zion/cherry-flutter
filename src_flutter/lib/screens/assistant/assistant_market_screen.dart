@@ -73,6 +73,7 @@ class AssistantMarketScreen extends ConsumerStatefulWidget {
 class _AssistantMarketScreenState extends ConsumerState<AssistantMarketScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _keyword = '';
+  String? _selectedGroup; // null 表示全部
 
   @override
   void dispose() {
@@ -82,17 +83,38 @@ class _AssistantMarketScreenState extends ConsumerState<AssistantMarketScreen> {
 
   List<AssistantModel> _filter(List<AssistantModel> assistants) {
     final query = _keyword.trim().toLowerCase();
-    if (query.isEmpty) return assistants;
     return assistants.where((assistant) {
-      final haystack = [
-        assistant.name,
-        assistant.description,
-        assistant.prompt,
-        ...(assistant.group ?? const []),
-        ...(assistant.tags ?? const []),
-      ].join(' ').toLowerCase();
-      return haystack.contains(query);
+      final matchesText = () {
+        if (query.isEmpty) return true;
+        final haystack = [
+          assistant.name,
+          assistant.description,
+          assistant.prompt,
+          ...(assistant.group ?? const []),
+          ...(assistant.tags ?? const []),
+        ].join(' ').toLowerCase();
+        return haystack.contains(query);
+      }();
+
+      final matchesGroup = () {
+        if (_selectedGroup == null || _selectedGroup!.isEmpty) return true;
+        final groups = assistant.group ?? const [];
+        return groups.contains(_selectedGroup);
+      }();
+
+      return matchesText && matchesGroup;
     }).toList();
+  }
+
+  List<String> _computeGroups(List<AssistantModel> assistants) {
+    final set = <String>{};
+    for (final a in assistants) {
+      for (final g in a.group ?? const <String>[]) {
+        if (g.trim().isNotEmpty) set.add(g.trim());
+      }
+    }
+    final list = set.toList()..sort();
+    return list;
   }
 
   Future<void> _openAssistant(BuildContext context, AssistantModel assistant) async {
@@ -109,70 +131,74 @@ class _AssistantMarketScreenState extends ConsumerState<AssistantMarketScreen> {
   Widget build(BuildContext context) {
     final builtIns = ref.watch(builtInAssistantsProvider);
 
-    // 匹配原项目：SafeAreaContainer Container py-0 gap-2.5
     return builtIns.when(
       data: (list) {
-        final filtered = _filter(list);
         final theme = Theme.of(context);
         final isDark = theme.brightness == Brightness.dark;
-        
-    return Scaffold(
-      backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            // HeaderBar - 使用通用组件
-            HeaderBar(
-              title: '助手市场',
-              leftButton: HeaderBarButton(
-                icon: Icon(
-                  Icons.arrow_back,
-                  size: 24,
-                  color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+        final groups = _computeGroups(list);
+        final filtered = _filter(list);
+
+        return Scaffold(
+          backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
+          body: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                HeaderBar(
+                  title: '助手市场',
+                  leftButton: HeaderBarButton(
+                    icon: Icon(
+                      Icons.arrow_back,
+                      size: 24,
+                      color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                    ),
+                    onPress: () => context.pop(),
+                  ),
                 ),
-                onPress: () => context.pop(),
-              ),
-            ),
-                // Container - 匹配原项目：py-0 gap-2.5
                 Expanded(
                   child: Padding(
-                    padding: EdgeInsets.zero, // py-0
+                    padding: EdgeInsets.zero,
                     child: Column(
                       children: [
-                        // SearchInput - 匹配原项目：px-4
+                        // 搜索输入
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16), // px-4
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: _buildSearchField(context),
                         ),
-                        const SizedBox(height: 10), // gap-2.5
-                        // AssistantsTabContent - 匹配原项目
+                        const SizedBox(height: 10),
+                        // 分组筛选（吸顶，因内部仅 GridView 滚动）
+                        _GroupChips(
+                          groups: groups,
+                          selected: _selectedGroup,
+                          onSelected: (value) => setState(() => _selectedGroup = value),
+                        ),
+                        const SizedBox(height: 10),
+                        // 网格列表
                         Expanded(
                           child: filtered.isEmpty
                               ? Center(
                                   child: Padding(
-                                    padding: const EdgeInsets.all(20), // p-5
+                                    padding: const EdgeInsets.all(20),
                                     child: Text(
                                       '未找到匹配的助手',
                                       style: theme.textTheme.bodyMedium?.copyWith(
-                                        fontSize: 16, // text-base
+                                        fontSize: 16,
                                         color: Tokens.gray60,
                                       ),
                                     ),
                                   ),
                                 )
                               : Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6), // p-1.5 = 6px
+                                  padding: const EdgeInsets.symmetric(horizontal: 6),
                                   child: GridView.builder(
                                     padding: EdgeInsets.only(
                                       bottom: MediaQuery.of(context).padding.bottom + 32,
                                     ),
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
+                                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                       crossAxisCount: 2,
-                                      crossAxisSpacing: 6, // gap-1.5 = 6px
+                                      crossAxisSpacing: 6,
                                       mainAxisSpacing: 6,
-                                      childAspectRatio: 0.78, // h-[230px] / width
+                                      childAspectRatio: 0.78,
                                     ),
                                     itemCount: filtered.length,
                                     itemBuilder: (context, index) {
@@ -195,14 +221,14 @@ class _AssistantMarketScreenState extends ConsumerState<AssistantMarketScreen> {
         );
       },
       loading: () => Scaffold(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark 
-            ? Tokens.bgPrimaryDark 
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? Tokens.bgPrimaryDark
             : Tokens.bgPrimaryLight,
         body: const Center(child: LoadingIndicator(message: '正在加载助手市场...')),
       ),
       error: (err, stack) => Scaffold(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark 
-            ? Tokens.bgPrimaryDark 
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? Tokens.bgPrimaryDark
             : Tokens.bgPrimaryLight,
         body: ErrorView(
           message: '助手市场加载失败',
@@ -217,15 +243,12 @@ class _AssistantMarketScreenState extends ConsumerState<AssistantMarketScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // 匹配原项目：SearchInput样式
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Tokens.cardDark : Tokens.cardLight, // bg-ui-card-background
-        borderRadius: BorderRadius.circular(12), // rounded-xl
+        color: isDark ? Tokens.cardDark : Tokens.cardLight,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark
-              ? Colors.white.withOpacity(0.06)
-              : Colors.black.withOpacity(0.05),
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05),
           width: 1,
         ),
       ),
@@ -233,7 +256,7 @@ class _AssistantMarketScreenState extends ConsumerState<AssistantMarketScreen> {
         controller: _searchController,
         onChanged: (value) => setState(() => _keyword = value),
         style: theme.textTheme.bodyMedium?.copyWith(
-          fontSize: 16, // text-base
+          fontSize: 16,
           color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
         ),
         decoration: InputDecoration(
@@ -261,8 +284,75 @@ class _AssistantMarketScreenState extends ConsumerState<AssistantMarketScreen> {
             color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14), // py-[14px]
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         ),
+      ),
+    );
+  }
+}
+
+class _GroupChips extends StatelessWidget {
+  final List<String> groups;
+  final String? selected;
+  final ValueChanged<String?> onSelected;
+
+  const _GroupChips({
+    required this.groups,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final items = ['全部', ...groups];
+
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        scrollDirection: Axis.horizontal,
+        itemBuilder: (_, i) {
+          final label = items[i];
+          final isAll = label == '全部';
+          final isSelected = isAll ? selected == null : selected == label;
+          final bg = isSelected
+              ? (isDark ? Tokens.greenDark20 : Tokens.green10)
+              : Colors.transparent;
+          final fg = isSelected
+              ? (isDark ? Tokens.greenDark100 : Tokens.green100)
+              : (isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight);
+          final border = isSelected
+              ? (isDark ? Tokens.greenDark20 : Tokens.green20)
+              : (isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08));
+
+          return GestureDetector(
+            onTap: () => onSelected(isAll ? null : label),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: border, width: 0.8),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: fg,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemCount: items.length,
       ),
     );
   }
