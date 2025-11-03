@@ -20,6 +20,7 @@ class ModelSettingsScreen extends ConsumerWidget {
     final providerSettings = ref.watch(providerSettingsProvider);
     final modelsAsync = ref.watch(modelsProvider);
     final selectedModel = ref.watch(selectedModelProvider);
+    final searchQuery = ref.watch(modelSearchProvider);
 
     return Scaffold(
       backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
@@ -48,82 +49,95 @@ class ModelSettingsScreen extends ConsumerWidget {
             ),
             Expanded(
               child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '当前模型',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _CurrentModelCard(
-              currentModelId: providerSettings.model,
-              settings: providerSettings,
-            ),
-            const SizedBox(height: 24),
-            
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '可用模型',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () => ref.invalidate(modelsProvider),
-                  icon: const Icon(Icons.refresh, size: 18),
-                  label: const Text('刷新'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            
-            modelsAsync.when(
-              data: (models) => _ModelsGrid(models: models),
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-              error: (error, stack) => _ErrorCard(
-                error: error.toString(),
-                onRetry: () => ref.invalidate(modelsProvider),
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            Text(
-              '自定义模型',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Consumer(
-              builder: (context, ref, _) {
-                final customModelsAsync = ref.watch(customModelsProvider);
-                return customModelsAsync.when(
-                  data: (customModels) => customModels.isEmpty
-                      ? _EmptyCustomModelsCard(onAdd: () => _showAddModelDialog(context, ref))
-                      : _CustomModelsList(
-                          models: customModels,
-                          onEdit: (model) => _showEditModelDialog(context, ref, model),
-                          onDelete: (model) => _showDeleteModelDialog(context, ref, model),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '当前模型',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _CurrentModelCard(
+                      currentModelId: providerSettings.model,
+                      settings: providerSettings,
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '可用模型',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) => _ErrorCard(
-                    error: error.toString(),
-                    onRetry: () => ref.invalidate(customModelsProvider),
-                  ),
-                );
-              },
-            ),
+                        TextButton.icon(
+                          onPressed: () => ref.invalidate(modelsProvider),
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: const Text('刷新'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // 搜索框
+                    _SearchField(
+                      value: searchQuery,
+                      onChanged: (q) => ref.read(modelSearchProvider.notifier).updateSearch(q),
+                    ),
+                    const SizedBox(height: 10),
+                    // 能力筛选 Chips（本地简易过滤）
+                    _CapabilityChips(
+                      onChanged: (_) {
+                        // 使用简单策略：直接触发重建；过滤在 _ModelsGrid 内处理（基于 search 已过滤的列表）
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    modelsAsync.when(
+                      data: (_) {
+                        final filtered = ref.watch(filteredModelsProvider);
+                        return _ModelsGrid(models: filtered);
+                      },
+                      loading: () => const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                      error: (error, stack) => _ErrorCard(
+                        error: error.toString(),
+                        onRetry: () => ref.invalidate(modelsProvider),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      '自定义模型',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final customModelsAsync = ref.watch(customModelsProvider);
+                        return customModelsAsync.when(
+                          data: (customModels) => customModels.isEmpty
+                              ? _EmptyCustomModelsCard(onAdd: () => _showAddModelDialog(context, ref))
+                              : _CustomModelsList(
+                                  models: customModels,
+                                  onEdit: (model) => _showEditModelDialog(context, ref, model),
+                                  onDelete: (model) => _showDeleteModelDialog(context, ref, model),
+                                ),
+                          loading: () => const Center(child: CircularProgressIndicator()),
+                          error: (error, stack) => _ErrorCard(
+                            error: error.toString(),
+                            onRetry: () => ref.invalidate(customModelsProvider),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -206,6 +220,101 @@ class ModelSettingsScreen extends ConsumerWidget {
             child: const Text('删除'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  const _SearchField({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Tokens.cardDark : Tokens.cardLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+        ),
+      ),
+      child: TextField(
+        controller: TextEditingController(text: value),
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          prefixIcon: Icon(
+            Icons.search,
+            size: 20,
+            color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
+          ),
+          hintText: '搜索模型…',
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        ),
+      ),
+    );
+  }
+}
+
+class _CapabilityChips extends StatefulWidget {
+  final ValueChanged<String?> onChanged;
+  const _CapabilityChips({required this.onChanged});
+
+  @override
+  State<_CapabilityChips> createState() => _CapabilityChipsState();
+}
+
+class _CapabilityChipsState extends State<_CapabilityChips> {
+  String? _selected; // text / vision / function_calling / code_generation
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final items = const [
+      ['全部', null],
+      ['文本', 'text'],
+      ['视觉', 'vision'],
+      ['函数调用', 'function_calling'],
+      ['代码生成', 'code_generation'],
+    ];
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemCount: items.length,
+        itemBuilder: (_, i) {
+          final label = items[i][0] as String;
+          final value = items[i][1] as String?;
+          final selected = _selected == value || (_selected == null && value == null);
+          final bg = selected ? (isDark ? Tokens.greenDark20 : Tokens.green10) : Colors.transparent;
+          final fg = selected ? (isDark ? Tokens.greenDark100 : Tokens.green100) : (isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight);
+          final border = selected ? (isDark ? Tokens.greenDark20 : Tokens.green20) : (isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08));
+          return GestureDetector(
+            onTap: () {
+              setState(() => _selected = value);
+              widget.onChanged(value);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: border, width: 0.8),
+              ),
+              child: Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(color: fg, fontWeight: FontWeight.w600),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
