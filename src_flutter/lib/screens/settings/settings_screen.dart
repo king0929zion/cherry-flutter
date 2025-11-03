@@ -218,6 +218,13 @@ class _SettingGroup extends StatelessWidget {
                     ? Colors.white.withOpacity(0.06)
                     : Colors.black.withOpacity(0.05),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.18 : 0.04),
+                  blurRadius: 18,
+                  offset: const Offset(0, 12),
+                ),
+              ],
             ),
             child: Column(
               children: [
@@ -344,13 +351,18 @@ class _LeadingIcon extends StatelessWidget {
       );
     }
 
-    return SizedBox(
+    return Container(
       width: _kIconBoxSize,
       height: _kIconBoxSize,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: isDark ? Tokens.blueDark20 : Tokens.blue10,
+      ),
+      alignment: Alignment.center,
       child: Icon(
         data.icon!,
-        size: 24,
-        color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+        size: 20,
+        color: Theme.of(context).colorScheme.primary,
       ),
     );
   }
