@@ -13,6 +13,7 @@ import '../../widgets/message_input.dart';
 import '../../models/assistant.dart';
 import '../../models/topic.dart';
 import '../../models/message_block.dart';
+import '../../theme/tokens.dart';
 import 'widgets/attachment_tile.dart';
 import 'widgets/chat_header.dart';
 
@@ -42,6 +43,9 @@ class ChatScreen extends ConsumerWidget {
         body: Center(child: Text('加载话题信息失败: $error')),
       ),
       data: (topic) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+
         final assistants = assistantsAsync.maybeWhen(
           data: (list) => list,
           orElse: () => const <AssistantModel>[],
@@ -65,26 +69,55 @@ class ChatScreen extends ConsumerWidget {
         final assistantList = assistants.isEmpty ? [currentAssistant] : assistants;
 
         return Scaffold(
+          backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
           appBar: ChatHeader(topicId: effectiveTopic),
           body: Column(
             children: [
               if (isStreaming)
-                Material(
-                  color: Colors.blueGrey.shade50,
-                  child: ListTile(
-                    leading: const SizedBox(
-                        width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-                    title: const Text('正在生成…'),
-                    trailing: TextButton(
-                      onPressed: () => ref.read(streamingProvider.notifier).cancel(effectiveTopic),
-                      child: const Text('取消'),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: isDark ? Tokens.cardDark : Tokens.cardLight,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(isDark ? 0.35 : 0.06),
+                          blurRadius: 18,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: ListTile(
+                      leading: const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      title: Text(
+                        '正在生成…',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                        ),
+                      ),
+                      trailing: TextButton(
+                        onPressed: () => ref.read(streamingProvider.notifier).cancel(effectiveTopic),
+                        child: const Text(
+                          '暂停',
+                          style: TextStyle(color: Tokens.textDelete),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               Expanded(
                 child: messagesAsync.when(
                   data: (list) => ListView.builder(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.only(top: 8, bottom: 8),
                     itemCount: list.length,
                     itemBuilder: (ctx, i) {
                       final m = list[i];
@@ -92,7 +125,7 @@ class ChatScreen extends ConsumerWidget {
                       final blocks = ref.watch(messageBlocksProvider(m.id));
                       final contentText = _composeMessageText(blocks);
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Column(
                           children: [
                             MessageBubble(
@@ -174,9 +207,9 @@ class ChatScreen extends ConsumerWidget {
                                               ),
                                               padding: const EdgeInsets.all(12),
                                               decoration: BoxDecoration(
-                                                color: Colors.green.withOpacity(0.1),
+                                                color: isDark ? Tokens.greenDark10 : Tokens.green10,
                                                 border: Border.all(
-                                                  color: Colors.green.withOpacity(0.3),
+                                                  color: isDark ? Tokens.greenDark20 : Tokens.green20,
                                                 ),
                                                 borderRadius: BorderRadius.circular(8),
                                               ),
