@@ -43,6 +43,8 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen>
   List<String> _selectedMcpServerIds = [];
   String _selectedEmoji = '🤖';
   Timer? _debounce;
+  bool _isSaving = false;
+  String? _saveStatus; // null/"saving"/"saved"
 
   @override
   void initState() {
@@ -186,6 +188,11 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen>
     final settingsJson = settingsOverride != null ? jsonEncode(settingsOverride) : null;
     final mcpServersJson = mcpServerIds != null ? jsonEncode(mcpServerIds) : null;
 
+    setState(() {
+      _isSaving = true;
+      _saveStatus = 'saving';
+    });
+
     try {
       await notifier.updateAssistant(
         _assistant!.id,
@@ -222,9 +229,24 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen>
       if (mcpServerIds != null) {
         _selectedMcpServerIds = mcpServerIds;
       }
-      setState(() {});
+
+      setState(() {
+        _isSaving = false;
+        _saveStatus = 'saved';
+      });
+
+      // 短暂显示“已保存”后清空
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        if (mounted && _saveStatus == 'saved') {
+          setState(() => _saveStatus = null);
+        }
+      });
     } catch (error) {
       if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+        _saveStatus = null;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('更新助手失败: $error'),
@@ -307,6 +329,7 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen>
                     ),
                     onPress: () => context.pop(),
                   ),
+                  rightButton: _buildSaveIndicator(isDark),
                 ),
                 Expanded(
                   child: Column(
@@ -1158,5 +1181,35 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen>
       _selectedEmoji = selected;
       _updateAssistant(emoji: selected);
     }
+  }
+
+  HeaderBarButton? _buildSaveIndicator(bool isDark) {
+    if (_saveStatus == 'saving') {
+      return HeaderBarButton(
+        icon: SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+          ),
+        ),
+        onPress: null,
+      );
+    }
+    if (_saveStatus == 'saved') {
+      return HeaderBarButton(
+        icon: Text(
+          '已保存',
+          style: TextStyle(
+            color: isDark ? Tokens.textPrimaryDark.withOpacity(0.7) : Tokens.textPrimaryLight.withOpacity(0.7),
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+        onPress: null,
+      );
+    }
+    return null;
   }
 }
