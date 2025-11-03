@@ -13,6 +13,7 @@ import '../../providers/provider_settings.dart';
 import '../../services/model_service.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/emoji_avatar.dart';
+import '../../widgets/header_bar.dart';
 
 /// AssistantDetailScreen - Flutter 复刻原项目的助手详情编辑界面
 /// 包含提示词、模型、工具三个标签页，支持 Emoji 头像编辑、模型参数配置、工具开关等功能
@@ -287,12 +288,26 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen>
         final isDark = theme.brightness == Brightness.dark;
         final mcpServers = ref.watch(mcpSettingsProvider);
 
+        final isNew = assistant.createdAt == assistant.updatedAt && assistant.name.isEmpty;
+        final title = isNew ? '创建助手' : '编辑助手';
+
         return Scaffold(
           backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
           body: SafeArea(
+            bottom: false,
             child: Column(
               children: [
-                _buildHeader(context, assistant),
+                HeaderBar(
+                  title: title,
+                  leftButton: HeaderBarButton(
+                    icon: Icon(
+                      Icons.arrow_back,
+                      size: 24,
+                      color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                    ),
+                    onPress: () => context.pop(),
+                  ),
+                ),
                 Expanded(
                   child: Column(
                     children: [
@@ -317,41 +332,6 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, AssistantModel assistant) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final isNew = assistant.createdAt == assistant.updatedAt && assistant.name.isEmpty;
-    final title = isNew ? '创建助手' : '编辑助手';
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 40,
-            child: IconButton(
-              onPressed: () => context.pop(),
-              icon: const Icon(Icons.arrow_back, size: 22),
-              tooltip: '返回',
-            ),
-          ),
-          Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
-              ),
-            ),
-          ),
-          const SizedBox(width: 40),
-        ],
-      ),
     );
   }
 
