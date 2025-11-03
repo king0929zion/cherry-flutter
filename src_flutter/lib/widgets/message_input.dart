@@ -156,7 +156,8 @@ class _MessageInputState extends State<MessageInput> {
     final paddingBottom = max(bottomInset + extraBottom, 12.0);
     final canSend = _controller.text.trim().isNotEmpty || _attachments.isNotEmpty;
 
-    final containerColor = isDark ? const Color(0xFF171A1F) : Colors.white;
+    // 匹配原项目：bg-surface-1 (card color)
+    final containerColor = isDark ? Tokens.cardDark : Tokens.cardLight;
     final outlineColor =
         isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05);
 
@@ -207,25 +208,27 @@ class _MessageInputState extends State<MessageInput> {
       ),
     );
 
+    // 匹配原项目：px-5 py-2 rounded-2xl
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 8, 20, paddingBottom),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: containerColor,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(24), // rounded-2xl = 24px
           border: Border.all(color: outlineColor),
           boxShadow: [
+            // 匹配原项目 shadowSize="xl"
             BoxShadow(
               color: isDark
                   ? Colors.black.withOpacity(0.32)
                   : Colors.black.withOpacity(0.08),
               blurRadius: 28,
-              offset: const Offset(0, 14),
+              offset: const Offset(0, -4), // iOS shadowOffset: { width: 0, height: -4 }
             ),
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 8), // px-5 py-2
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,30 +259,35 @@ class _MessageInputState extends State<MessageInput> {
                         ),
                       ),
               ),
-              ConstrainedBox(
+              // 匹配原项目：h-24 p-0 border-none text-base
+              Container(
                 constraints: const BoxConstraints(
-                  minHeight: 56,
-                  maxHeight: 160,
+                  minHeight: 96, // h-24 = 96px
                 ),
                 child: TextField(
                   controller: _controller,
                   focusNode: _focusNode,
                   maxLines: null,
                   onChanged: (_) => setState(() {}),
-                  style: theme.textTheme.bodyLarge?.copyWith(height: 1.4),
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontSize: 16, // text-base
+                    height: 1.4,
+                    color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                  ),
                   decoration: InputDecoration(
                     hintText: '发送消息...',
                     hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: 16,
                       color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
                     ),
                     border: InputBorder.none,
                     isDense: true,
-                    contentPadding: EdgeInsets.zero,
+                    contentPadding: EdgeInsets.zero, // p-0
                   ),
                   textInputAction: TextInputAction.newline,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 10), // gap-[10px]
               Row(
                 children: [
                   Expanded(
@@ -419,22 +427,27 @@ class _MentionPill extends StatelessWidget {
       );
     }
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          color: background,
-          border: Border.all(
-            color: borderColor,
-            width: 0.7,
+    // 匹配原项目：rounded-[48px] border-[0.5px] py-1 px-1
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4), // py-1 px-1
+          constraints: const BoxConstraints(maxWidth: 150), // maxWidth: 150
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999), // rounded-[48px]
+            color: background,
+            border: Border.all(
+              color: borderColor,
+              width: 0.5, // border-[0.5px]
+            ),
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: children,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: children,
+          ),
         ),
       ),
     );
@@ -453,41 +466,36 @@ class _SendButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onPressed : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        curve: Curves.easeOut,
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          gradient: enabled
-              ? const LinearGradient(
-                  colors: [Color(0xFFC0E58D), Color(0xFF3BB554)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                )
-              : null,
-          color: enabled ? null : const Color(0xFF2A2F38),
-          boxShadow: enabled
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF3BB554).withOpacity(0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 10),
-                  ),
-                ]
-              : null,
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    // 匹配原项目：disabled ? '#a0a1b099' : '#81df94'
+    final backgroundColor = enabled 
+        ? (isDark ? Tokens.greenDark100 : Tokens.green100)
+        : Tokens.gray60;
+    final iconColor = enabled 
+        ? Colors.white 
+        : (isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight);
+    
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? onPressed : null,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 30, // padding: 3, size: 24, so 24 + 3*2 = 30
+          height: 30,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            color: backgroundColor,
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            Icons.arrow_upward_rounded,
+            size: 24,
+            color: iconColor,
+          ),
         ),
-        alignment: Alignment.center,
-        child: enabled
-            ? CherryIcons.arrowUp(size: 20)
-            : Icon(
-                Icons.arrow_upward_rounded,
-                size: 18,
-                color: Colors.white.withOpacity(0.5),
-              ),
       ),
     );
   }
@@ -500,20 +508,21 @@ class _PauseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          color: const Color(0xFFED6767),
-        ),
-        alignment: Alignment.center,
-        child: const Icon(
-          Icons.pause_circle_filled,
-          color: Colors.white,
-          size: 22,
+    // 匹配原项目：text-text-delete = #dc3e42
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 30,
+          height: 30,
+          alignment: Alignment.center,
+          child: Icon(
+            Icons.pause_circle_filled,
+            color: Tokens.textDelete, // #dc3e42
+            size: 24,
+          ),
         ),
       ),
     );

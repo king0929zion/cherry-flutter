@@ -34,9 +34,10 @@ class MessageBubble extends StatelessWidget {
     final bubble = DecoratedBox(
       decoration: isUser ? _userDecoration(isDark) : _assistantDecoration(isDark),
       child: Padding(
+        // 匹配原项目：px-5 (20px)
         padding: isUser
-            ? const EdgeInsets.fromLTRB(20, 14, 20, 16)
-            : const EdgeInsets.fromLTRB(20, 16, 20, 18),
+            ? const EdgeInsets.fromLTRB(20, 12, 20, 12) // px-5 py-3
+            : const EdgeInsets.fromLTRB(0, 12, 0, 12), // px-0 (原项目助手消息px-0)
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -67,48 +68,31 @@ class MessageBubble extends StatelessWidget {
   }
 
   BoxDecoration _userDecoration(bool isDark) {
+    // 匹配原项目：bg-green-10 border border-green-20 rounded-l-xl rounded-tr-xl rounded-br-sm
     return BoxDecoration(
       color: isDark ? Tokens.greenDark10 : Tokens.green10,
       border: Border.all(
         color: isDark ? Tokens.greenDark20 : Tokens.green20,
+        width: 1,
       ),
       borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(22),
-        bottomLeft: Radius.circular(22),
-        topRight: Radius.circular(22),
-        bottomRight: Radius.circular(10),
+        topLeft: Radius.circular(12), // rounded-l-xl = 12px
+        topRight: Radius.circular(12), // rounded-tr-xl = 12px
+        bottomRight: Radius.circular(2), // rounded-br-sm = 2px
+        bottomLeft: Radius.circular(12), // rounded-l-xl = 12px
       ),
-      boxShadow: [
-        BoxShadow(
-          color: (isDark ? Colors.black : Tokens.green100).withOpacity(0.12),
-          blurRadius: 16,
-          offset: const Offset(0, 8),
-        ),
-      ],
     );
   }
 
   BoxDecoration _assistantDecoration(bool isDark) {
-    final borderColor =
-        isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06);
-    final background = isDark ? const Color(0xFF1A1C20) : Colors.white;
+    // 匹配原项目：rounded-2xl bg-transparent
+    final background = isDark ? Tokens.cardDark : Tokens.cardLight;
 
     return BoxDecoration(
       color: background,
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(26),
-        topRight: Radius.circular(26),
-        bottomRight: Radius.circular(26),
-        bottomLeft: Radius.circular(12),
+      borderRadius: const BorderRadius.all(
+        Radius.circular(16), // rounded-2xl = 16px
       ),
-      border: Border.all(color: borderColor),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(isDark ? 0.35 : 0.06),
-          blurRadius: 20,
-          offset: const Offset(0, 12),
-        ),
-      ],
     );
   }
 

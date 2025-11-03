@@ -27,13 +27,13 @@ class AppDrawer extends StatelessWidget {
             
             // 菜单项区域 gap-1.5 px-2.5
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10), // px-2.5
               child: Column(
                 children: [
                   // 我的助手
                   _DrawerMenuItem(
                     icon: Icons.assistant_outlined,
-                    label: '我的助手', // TODO: i18n
+                    label: '我的助手',
                     onTap: () {
                       Navigator.pop(context);
                       context.go('/assistant');
@@ -44,17 +44,22 @@ class AppDrawer extends StatelessWidget {
                   // MCP 市场
                   _DrawerMenuItem(
                     icon: Icons.extension_outlined,
-                    label: 'MCP 市场', // TODO: i18n
+                    label: 'MCP 市场',
                     onTap: () {
                       Navigator.pop(context);
                       context.go('/mcp');
                     },
                   ),
                   
-                  // 分割线
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    child: Divider(height: 1),
+                  // 分割线 - 匹配原项目
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10), // px-2.5
+                    child: Divider(
+                      height: 1,
+                      color: isDark 
+                        ? Colors.white.withOpacity(0.08)
+                        : Colors.black.withOpacity(0.06),
+                    ),
                   ),
                 ],
               ),
@@ -72,65 +77,79 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
 
-            // 底部分割线
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Divider(height: 1),
+            // 底部分割线 - 匹配原项目 px-5 pb-2.5
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10), // px-5 pb-2.5
+              child: Divider(
+                height: 1,
+                color: isDark 
+                  ? Colors.white.withOpacity(0.08)
+                  : Colors.black.withOpacity(0.06),
+              ),
             ),
 
-            // 底部用户信息区域
+            // 底部用户信息区域 - 匹配原项目
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0), // px-5
               child: Row(
                 children: [
-                  // 用户头像和名称
-                  InkWell(
-                    onTap: () {
-                      Navigator.pop(context);
-                      context.go('/settings/about/personal');
-                    },
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                      child: Row(
-                        children: [
-                          // 头像
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: Tokens.brand,
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'C',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                  // 用户头像和名称 - 匹配原项目 gap-2.5 items-center
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.go('/settings/about/personal');
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                        child: Row(
+                          children: [
+                            // 头像 - 匹配原项目 w-12 h-12 rounded-full
+                            Container(
+                              width: 48, // w-12 = 48px
+                              height: 48,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24), // rounded-full
+                                // TODO: 从设置读取头像
+                                color: Tokens.brand,
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'C',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          // 名称
-                          Text(
-                            'Cherry Studio', // TODO: 从设置读取
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                        ],
+                            const SizedBox(width: 10), // gap-2.5
+                            // 名称 - 匹配原项目 text-base
+                            Text(
+                              'Cherry Studio', // TODO: 从设置读取
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontSize: 16, // text-base
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                   const Spacer(),
-                  // 设置按钮
-                  IconButton(
-                    icon: const Icon(Icons.settings_outlined, size: 24),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      context.go('/settings');
-                    },
+                  // 设置按钮 - 匹配原项目 paddingRight: 16
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: IconButton(
+                      icon: const Icon(Icons.settings_outlined, size: 24),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        context.go('/settings');
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -143,6 +162,7 @@ class AppDrawer extends StatelessWidget {
 }
 
 /// DrawerMenuItem - 抽屉菜单项
+/// 匹配原项目：flex-row justify-between items-center py-2.5 px-2.5 rounded-lg
 class _DrawerMenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -157,24 +177,37 @@ class _DrawerMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        child: Row(
-          children: [
-            Icon(icon, size: 24),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                label,
-                style: theme.textTheme.bodyMedium,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8), // rounded-lg
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10), // py-2.5 px-2.5
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween, // justify-between
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 24),
+                  const SizedBox(width: 10), // gap-2.5
+                  Text(
+                    label,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: 16, // text-base
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const Icon(Icons.chevron_right, size: 20),
-          ],
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
+              ),
+            ],
+          ),
         ),
       ),
     );

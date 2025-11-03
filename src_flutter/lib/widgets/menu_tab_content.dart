@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../theme/tokens.dart';
+
 /// MenuTabContent - 菜单标签内容组件
-/// 用于显示分组标题和"查看全部"按钮
+/// 匹配原项目：flex-1 gap-2.5 px-5 py-2.5
 class MenuTabContent extends StatelessWidget {
   final String title;
   final VoidCallback? onSeeAllPress;
@@ -17,31 +19,44 @@ class MenuTabContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 标题行
+        // 标题行 - 匹配原项目：px-5 py-2.5 gap-2 items-center
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 20), // px-5
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween, // justify-between
             children: [
-              Text(
-                title,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.normal,
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10), // py-2.5
+                child: Row(
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 16, // text-base
+                        color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               if (onSeeAllPress != null)
-                InkWell(
-                  onTap: onSeeAllPress,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    child: Text(
-                      '查看全部', // TODO: i18n
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF0090FF), // text-link
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onSeeAllPress,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(10), // hitSlop
+                      child: Text(
+                        '查看全部',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Tokens.textLink, // text-text-link
+                        ),
                       ),
                     ),
                   ),

@@ -52,47 +52,45 @@ class TopicItem extends StatelessWidget {
     final borderColor =
         isActive ? (isDark ? Tokens.greenDark20 : Tokens.green20) : Colors.transparent;
 
+    // 匹配原项目：rounded-lg py-1 px-1 gap-1.5
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(8), // rounded-lg
         onTap: onTap,
         onLongPress: (onDelete != null || onRename != null) ? () => _showMenu(context) : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           curve: Curves.easeOut,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4), // py-1 px-1
           decoration: BoxDecoration(
             color: background,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: borderColor, width: isActive ? 1.2 : 1),
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: (isDark ? Tokens.greenDark100 : Tokens.green100).withOpacity(0.2),
-                      blurRadius: 14,
-                      offset: const Offset(0, 8),
-                    ),
-                  ]
-                : const [],
+            borderRadius: BorderRadius.circular(8), // rounded-lg
+            border: isActive ? Border.all(
+              color: borderColor, 
+              width: 1,
+            ) : null,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _buildLeading(isDark),
-              const SizedBox(width: 12),
+              const SizedBox(width: 6), // gap-1.5
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // 匹配原项目：justify-between items-center gap-2
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
                           child: Text(
-                            topicName.isEmpty ? '未命名会话' : topicName,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
+                            assistantName, // 原项目显示助手名称在上
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontSize: 16, // text-base
+                              fontWeight: FontWeight.bold, // font-bold
                               color: isDark
                                   ? Tokens.textPrimaryDark
                                   : Tokens.textPrimaryLight,
@@ -101,10 +99,11 @@ class TopicItem extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 8), // gap-2
                         Text(
                           _formatTime(updatedAt),
                           style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 12, // text-xs
                             color: isDark
                                 ? Tokens.textSecondaryDark
                                 : Tokens.textSecondaryLight,
@@ -112,30 +111,19 @@ class TopicItem extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.smart_toy_outlined,
-                          size: 14,
-                          color: isDark
-                              ? Tokens.textSecondaryDark
-                              : Tokens.textSecondaryLight,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            assistantName,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: isDark
-                                  ? Tokens.textSecondaryDark
-                                  : Tokens.textSecondaryLight,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 2), // gap-0.5
+                    // 匹配原项目：text-[13px] font-normal
+                    Text(
+                      topicName.isEmpty ? '未命名会话' : topicName,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 13, // text-[13px]
+                        fontWeight: FontWeight.normal, // font-normal
+                        color: isDark
+                            ? Tokens.textSecondaryDark
+                            : Tokens.textSecondaryLight,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -148,21 +136,15 @@ class TopicItem extends StatelessWidget {
   }
 
   Widget _buildLeading(bool isDark) {
+    // 匹配原项目：size={42} borderRadius={16} borderWidth={3} borderColor={isDark ? '#444444' : '#ffffff'}
     return Container(
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? const [Color(0xFF273034), Color(0xFF1E2529)]
-              : const [Color(0xFFF1F6EA), Color(0xFFE9EFE2)],
-        ),
+        borderRadius: BorderRadius.circular(16), // borderRadius={16}
         border: Border.all(
-          color: isDark ? const Color(0xFF313B41) : Colors.white,
-          width: 3,
+          color: isDark ? const Color(0xFF444444) : Colors.white, // borderColor
+          width: 3, // borderWidth={3}
         ),
       ),
       alignment: Alignment.center,
