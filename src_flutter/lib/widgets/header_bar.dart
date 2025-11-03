@@ -42,7 +42,7 @@ class HeaderBar extends StatelessWidget {
         children: [
           // 左侧区域
           SizedBox(
-            minWidth: 40,
+            width: 40,
             child: leftButton != null
                 ? _buildButton(leftButton!)
                 : showBackButton
@@ -71,7 +71,7 @@ class HeaderBar extends StatelessWidget {
           ),
           // 右侧区域
           SizedBox(
-            minWidth: 40,
+            width: 40,
             child: buttonsToRender.isNotEmpty
                 ? Row(
                     mainAxisSize: MainAxisSize.min,

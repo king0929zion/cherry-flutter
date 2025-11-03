@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../providers/mcp_settings.dart' show mcpSettingsProvider, McpSettingsNotifier, McpServer;
+import '../../models/mcp.dart' as mcp_model;
 import '../../services/mcp_service.dart';
 import '../../theme/tokens.dart';
 
@@ -196,7 +197,15 @@ class McpScreen extends ConsumerWidget {
 
   Future<void> _testConnection(BuildContext context, WidgetRef ref, McpServer server) async {
     final service = ref.read(mcpServiceProvider);
-    final isConnected = await service.testMcpServerConnection(server);
+    // Convert McpServer from mcp_settings to mcp_model
+    final serverModel = mcp_model.McpServer(
+      id: server.id,
+      name: server.name,
+      description: server.description,
+      baseUrl: server.endpoint,
+      type: server.type == 'sse' ? mcp_model.McpServerType.sse : mcp_model.McpServerType.streamableHttp,
+    );
+    final isConnected = await service.testMcpServerConnection(serverModel);
     
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -321,12 +330,14 @@ class _McpServerCard extends StatelessWidget {
     );
   }
 
-  String _formatServerType(McpServerType type) {
+  String _formatServerType(String? type) {
+    if (type == null) return 'HTTP';
     switch (type) {
-      case McpServerType.streamableHttp:
-        return 'HTTP';
-      case McpServerType.sse:
+      case 'sse':
         return 'SSE';
+      case 'streamableHttp':
+      default:
+        return 'HTTP';
     }
   }
 }

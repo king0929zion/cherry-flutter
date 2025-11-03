@@ -6,38 +6,50 @@ import '../services/prefs_service.dart';
 class McpServer {
   final String id;
   final String name;
+  final String? description;
   final String endpoint;
+  final String? type;
   final bool isActive;
   const McpServer({
     required this.id, 
     required this.name, 
+    this.description,
     required this.endpoint,
+    this.type,
     this.isActive = true,
   });
 
   Map<String, dynamic> toJson() => {
     'id': id, 
     'name': name, 
+    'description': description,
     'endpoint': endpoint,
+    'type': type,
     'isActive': isActive,
   };
   static McpServer fromJson(Map m) => McpServer(
         id: m['id'] as String,
         name: m['name'] as String,
+        description: m['description'] as String?,
         endpoint: m['endpoint'] as String,
+        type: m['type'] as String?,
         isActive: m['isActive'] as bool? ?? true,
       );
   
   McpServer copyWith({
     String? id,
     String? name,
+    String? description,
     String? endpoint,
+    String? type,
     bool? isActive,
   }) {
     return McpServer(
       id: id ?? this.id,
       name: name ?? this.name,
+      description: description ?? this.description,
       endpoint: endpoint ?? this.endpoint,
+      type: type ?? this.type,
       isActive: isActive ?? this.isActive,
     );
   }

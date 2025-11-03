@@ -210,10 +210,6 @@ class AboutScreen extends StatelessWidget {
             ),
             const Icon(Icons.arrow_outward, size: 16),
           ],
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );

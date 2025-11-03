@@ -1065,7 +1065,7 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen>
                             title: Text(server.name),
                             subtitle: server.description != null && server.description!.isNotEmpty
                                 ? Text(server.description!)
-                                : Text(server.baseUrl),
+                                : Text(server.endpoint),
                           );
                         },
                       ),

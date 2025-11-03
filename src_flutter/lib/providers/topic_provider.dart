@@ -14,17 +14,7 @@ final topicsProvider = Provider<List<TopicModel>>((ref) {
 });
 
 // 当前话题提供者
-final currentTopicProvider = StateNotifierProvider<CurrentTopicNotifier, TopicModel?>((ref) {
-  return CurrentTopicNotifier();
-});
-
-class CurrentTopicNotifier extends StateNotifier<TopicModel?> {
-  CurrentTopicNotifier() : super(null);
-  
-  void setTopic(TopicModel? topic) {
-    state = topic;
-  }
-}
+final currentTopicProvider = StateProvider<TopicModel?>((ref) => null);
 
 // 根据ID获取话题提供者
 final topicProvider = Provider.family<TopicModel?, String>((ref, id) {

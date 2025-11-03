@@ -64,8 +64,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                       ),
                       _SettingTile(
                         label: '语言',
-                        value: _getLocaleLabel(locale),
-                        onTap: () => _showLocalePicker(context, locale),
+                        value: _getLocaleLabel(locale ?? const Locale('zh')),
+                        onTap: () => _showLocalePicker(context, locale ?? const Locale('zh')),
                       ),
                     ],
                   ),
@@ -148,7 +148,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                   ? const Icon(Icons.check, color: Tokens.green100)
                   : null,
               onTap: () {
-                ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light);
+                ref.read(themeModeProvider.notifier).set(ThemeMode.light);
                 Navigator.pop(ctx);
               },
             ),
@@ -158,7 +158,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                   ? const Icon(Icons.check, color: Tokens.green100)
                   : null,
               onTap: () {
-                ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.dark);
+                ref.read(themeModeProvider.notifier).set(ThemeMode.dark);
                 Navigator.pop(ctx);
               },
             ),
@@ -168,7 +168,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                   ? const Icon(Icons.check, color: Tokens.green100)
                   : null,
               onTap: () {
-                ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.system);
+                ref.read(themeModeProvider.notifier).set(ThemeMode.system);
                 Navigator.pop(ctx);
               },
             ),
@@ -191,7 +191,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                   ? const Icon(Icons.check, color: Tokens.green100)
                   : null,
               onTap: () {
-                ref.read(localeProvider.notifier).setLocale(const Locale('zh'));
+                ref.read(localeProvider.notifier).set(const Locale('zh'));
                 Navigator.pop(ctx);
               },
             ),
@@ -201,7 +201,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                   ? const Icon(Icons.check, color: Tokens.green100)
                   : null,
               onTap: () {
-                ref.read(localeProvider.notifier).setLocale(const Locale('en'));
+                ref.read(localeProvider.notifier).set(const Locale('en'));
                 Navigator.pop(ctx);
               },
             ),
@@ -216,10 +216,10 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     try {
       // Export data logic
       final data = {
-        'assistants': assistantsBox.values.toList(),
-        'topics': topicsBox.values.toList(),
-        'messages': messagesBox.values.toList(),
-        'providers': providersBox.values.toList(),
+        'assistants': HiveBoxes.getAssistantsBox().values.toList(),
+        'topics': HiveBoxes.getTopicsBox().values.toList(),
+        'messages': HiveBoxes.getMessagesBox().values.toList(),
+        'providers': [], // TODO: 添加 provider box
       };
       final jsonString = jsonEncode(data);
       await Clipboard.setData(ClipboardData(text: jsonString));
@@ -299,11 +299,11 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
 
   Future<void> _clearAllData() async {
     try {
-      await assistantsBox.clear();
-      await topicsBox.clear();
-      await messagesBox.clear();
-      await messageBlocksBox.clear();
-      await providersBox.clear();
+      await HiveBoxes.getAssistantsBox().clear();
+      await HiveBoxes.getTopicsBox().clear();
+      await HiveBoxes.getMessagesBox().clear();
+      await HiveBoxes.getMessageBlocksBox().clear();
+      // TODO: 添加 provider box clear
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
