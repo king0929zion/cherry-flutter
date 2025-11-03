@@ -18,62 +18,254 @@ class AssistantScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final assistants = ref.watch(assistantNotifierProvider);
-    final svc = ref.read(assistantServiceProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final assistants = ref.watch(customAssistantsProvider);
+    final TextEditingController searchController = TextEditingController();
+    String searchText = '';
     
+    // 匹配原项目：SafeAreaContainer pb-0 Container p-0
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('我的助手'), // TODO: i18n
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () async {
-              await ref.read(assistantNotifierProvider.notifier).createAssistant(
-                    name: '新助手',
-                    prompt: '',
-                  );
-            },
+      backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // HeaderBar - 匹配原项目
+            _HeaderBar(
+              title: '我的助手',
+              onMenuPress: () {
+                Scaffold.maybeOf(context)?.openDrawer();
+              },
+              onMarketPress: () => context.go('/assistant/market'),
+              onAddPress: () async {
+                final service = ref.read(assistantServiceProvider);
+                final newAssistant = await service.createAssistant(
+                  name: '新助手',
+                  prompt: '',
+                );
+                if (context.mounted) {
+                  context.go('/assistant/${newAssistant.id}');
+                }
+              },
+            ),
+            // Container - 匹配原项目：p-0
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.zero, // p-0
+                child: Column(
+                  children: [
+                    // SearchInput - 匹配原项目：px-4
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16), // px-4
+                      child: _buildSearchField(context, searchController, (value) {
+                        searchText = value;
+                      }),
+                    ),
+                    const SizedBox(height: 8), // h-2 = 8px
+                    // List - 匹配原项目：contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 30 }}
+                    Expanded(
+                      child: assistants.isEmpty
+                          ? Center(
+                              child: Text(
+                                '暂无助手',
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            )
+                          : ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 30), // paddingHorizontal: 16, paddingBottom: 30
+                              itemCount: assistants.length,
+                              separatorBuilder: (_, __) => const SizedBox(height: 8), // h-2
+                              itemBuilder: (ctx, i) => _AssistantItem(
+                                assistant: assistants[i],
+                                onTap: () => context.go('/assistant/${assistants[i].id}'),
+                                onPress: () {
+                                  // Show bottom sheet
+                                },
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchField(BuildContext context, TextEditingController controller, ValueChanged<String> onChanged) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Tokens.cardDark : Tokens.cardLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05),
+          width: 1,
+        ),
+      ),
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontSize: 16,
+          color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+        ),
+        decoration: InputDecoration(
+          prefixIcon: Icon(
+            Icons.search,
+            size: 20,
+            color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
+          ),
+          hintText: '搜索...',
+          hintStyle: theme.textTheme.bodyMedium?.copyWith(
+            fontSize: 16,
+            color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        ),
+      ),
+    );
+  }
+}
+
+/// HeaderBar - 匹配原项目的HeaderBar组件
+class _HeaderBar extends StatelessWidget {
+  final String title;
+  final VoidCallback onMenuPress;
+  final VoidCallback onMarketPress;
+  final VoidCallback onAddPress;
+
+  const _HeaderBar({
+    required this.title,
+    required this.onMenuPress,
+    required this.onMarketPress,
+    required this.onAddPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 40,
+            child: IconButton(
+              icon: const Icon(Icons.menu, size: 24),
+              onPressed: onMenuPress,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.store_outlined, size: 24),
+                onPressed: onMarketPress,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add, size: 24),
+                onPressed: onAddPress,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
           ),
         ],
       ),
-      body: assistants.when(
-        data: (list) {
-          if (list.isEmpty) {
-            return EmptyState(
-              icon: Icons.smart_toy_outlined,
-              title: '暂无助手',
-              description: '创建你的第一个 AI 助手',
-              actionLabel: '创建助手',
-              onAction: () async {
-                await ref.read(assistantNotifierProvider.notifier).createAssistant(
-                      name: '新助手',
-                      prompt: '',
-                    );
-              },
-            );
-          }
-          
-          return GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.75,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: list.length,
-            itemBuilder: (ctx, i) => _AssistantCard(
-              assistant: list[i],
-              onTap: () => context.go('/assistant/${list[i].id}'),
-            ),
-          );
-        },
-        loading: () => const LoadingIndicator(message: '加载助手...'),
-        error: (e, _) => ErrorView(
-          message: '加载助手失败',
-          details: e.toString(),
-          onRetry: () => ref.invalidate(assistantNotifierProvider),
+    );
+  }
+}
+
+/// AssistantItem - 匹配原项目的AssistantItem
+class _AssistantItem extends StatelessWidget {
+  final AssistantModel assistant;
+  final VoidCallback onTap;
+  final VoidCallback onPress;
+
+  const _AssistantItem({
+    required this.assistant,
+    required this.onTap,
+    required this.onPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              // Avatar
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: isDark ? Tokens.greenDark20 : Tokens.green10,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  assistant.emoji ?? '🤖',
+                  style: const TextStyle(fontSize: 24),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      assistant.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (assistant.description != null && assistant.description!.isNotEmpty)
+                      Text(
+                        assistant.description!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

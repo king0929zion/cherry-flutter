@@ -19,118 +19,141 @@ class AssistantMarketCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final backgroundColor = isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight;
-    final borderColor = isDark ? Tokens.borderDark : Tokens.borderLight;
-    final blurColor = (assistant.emoji ?? '🤖');
+    final emojiOpacity = isDark ? 0.2 : 0.4; // Platform.OS === 'android' ? (isDark ? 0.1 : 0.9) : isDark ? 0.2 : 0.4
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: borderColor.withOpacity(0.12), width: 1),
-          color: backgroundColor,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.2 : 0.08),
-              blurRadius: 14,
-              offset: const Offset(0, 8),
+    // 匹配原项目：p-1.5 w-full h-[230px] bg-ui-card-background rounded-2xl
+    return Padding(
+      padding: const EdgeInsets.all(6), // p-1.5 = 6px
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16), // rounded-2xl
+          child: Container(
+            height: 230, // h-[230px]
+            decoration: BoxDecoration(
+              color: isDark ? Tokens.cardDark : Tokens.cardLight, // bg-ui-card-background
+              borderRadius: BorderRadius.circular(16), // rounded-2xl
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              _EmojiBackdrop(emoji: blurColor),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      backgroundColor.withOpacity(isDark ? 0.82 : 0.9),
-                      backgroundColor,
-                    ],
+            child: Stack(
+              children: [
+                // Background blur emoji - 匹配原项目：w-full h-1/2 absolute top-0 scale-150
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 115, // h-1/2 = 230/2
+                  child: Wrap(
+                    children: List.generate(8, (index) {
+                      return SizedBox(
+                        width: MediaQuery.of(context).size.width / 8,
+                        child: Transform.scale(
+                          scale: 1.5, // scale-150
+                          child: Center(
+                            child: Text(
+                              assistant.emoji ?? '🤖',
+                              style: TextStyle(
+                                fontSize: 40,
+                                opacity: emojiOpacity,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 86,
-                      height: 86,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(isDark ? 0.05 : 0.18),
-                        borderRadius: BorderRadius.circular(28),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(isDark ? 0.15 : 0.25),
-                          width: 4,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        assistant.emoji ?? '🤖',
-                        style: const TextStyle(fontSize: 40),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      assistant.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: Text(
-                        assistant.description ?? assistant.prompt,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          height: 1.35,
-                          color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      alignment: WrapAlignment.center,
+                // Content - 匹配原项目：flex-1 gap-2 items-center rounded-2xl py-4 px-3.5
+                Positioned.fill(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16), // py-4 px-3.5
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        if (assistant.group != null)
-                          ...assistant.group!
-                              .take(3)
-                              .map((g) => _TagChip(
-                                    label: g,
-                                    background: isDark ? Tokens.greenDark10 : Tokens.green10,
-                                    border: isDark ? Tokens.greenDark20 : Tokens.green20,
-                                    foreground: isDark ? Tokens.greenDark100 : Tokens.green100,
-                                  )),
-                        if (assistant.tags != null)
-                          ...assistant.tags!
-                              .take(2)
-                              .map((t) => _TagChip(
-                                    label: t,
-                                    background: isDark ? Tokens.orangeDark10 : Tokens.orange10,
-                                    border: isDark ? Tokens.orangeDark20 : Tokens.orange20,
-                                    foreground: isDark ? Tokens.orangeDark100 : Tokens.orange100,
-                                  )),
+                        // EmojiAvatar - 匹配原项目：size={90} borderWidth={5} borderColor
+                        Container(
+                          width: 90,
+                          height: 90,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF333333) : const Color(0xFFF7F7F7),
+                              width: 5, // borderWidth={5}
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            assistant.emoji ?? '🤖',
+                            style: const TextStyle(fontSize: 45), // size * 0.5
+                          ),
+                        ),
+                        const SizedBox(height: 8), // gap-2
+                        // Name - 匹配原项目：text-base text-center
+                        Text(
+                          assistant.name,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontSize: 16, // text-base
+                            fontWeight: FontWeight.normal,
+                            color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const Spacer(),
+                        // Description and Tags - 匹配原项目：flex-1 justify-between items-center
+                        Column(
+                          children: [
+                            // Description - 匹配原项目：text-xs leading-[14px]
+                            Text(
+                              assistant.description ?? '',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontSize: 12, // text-xs
+                                height: 14 / 12, // leading-[14px]
+                                color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            // Group Tags - 匹配原项目：gap-2.5 flex-wrap h-[18px] justify-center
+                            Wrap(
+                              spacing: 10, // gap-2.5
+                              runSpacing: 10,
+                              alignment: WrapAlignment.center,
+                              children: (assistant.group ?? []).take(3).map((group) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), // py-0.5 px-1
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20), // rounded-[20px]
+                                    color: isDark ? Tokens.greenDark10 : Tokens.green10,
+                                    border: Border.all(
+                                      color: isDark ? Tokens.greenDark20 : Tokens.green20,
+                                      width: 0.5, // border-[0.5px]
+                                    ),
+                                  ),
+                                  child: Text(
+                                    group.isNotEmpty 
+                                        ? '${group[0].toUpperCase()}${group.substring(1)}'
+                                        : group,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      fontSize: 10, // text-[10px]
+                                      color: isDark ? Tokens.greenDark100 : Tokens.green100,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
