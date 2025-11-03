@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'providers/app_state.dart';
+// import 'providers/app_state.dart'; // welcome 已移除
 import 'widgets/app_shell.dart';
-import 'screens/welcome/welcome_screen.dart';
+// import 'screens/welcome/welcome_screen.dart';
 import 'screens/home/chat_screen.dart';
 import 'screens/topic/topic_screen.dart';
 import 'screens/settings/settings_screen.dart';
@@ -26,23 +26,12 @@ import 'screens/mcp/mcp_server_editor_screen.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final welcomeShown = ref.watch(welcomeShownProvider);
-
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/home/chat/default',
-    redirect: (context, state) {
-      final loggingInWelcome = state.matchedLocation.startsWith('/welcome');
-      if (!welcomeShown && !loggingInWelcome) {
-        return '/welcome';
-      }
-      if (welcomeShown && loggingInWelcome) {
-        return '/home/chat/default';
-      }
-      return null;
-    },
+    // 移除欢迎页重定向逻辑，首次进入直接进入主界面
     routes: [
-      GoRoute(path: '/welcome', builder: (ctx, st) => const WelcomeScreen()),
+      // GoRoute(path: '/welcome', builder: (ctx, st) => const WelcomeScreen()),
       ShellRoute(
         builder: (context, state, child) {
           return AppShell(child: child);
