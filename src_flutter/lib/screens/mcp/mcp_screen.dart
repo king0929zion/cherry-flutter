@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../services/mcp_service.dart';
+import '../../models/mcp.dart';
 import '../../providers/mcp_settings.dart';
-import '../../models/mcp.dart' as mcp_model;
+import '../../services/mcp_service.dart';
 import '../../theme/tokens.dart';
-import '../../utils/ids.dart';
-import 'mcp_market_screen.dart';
-import 'mcp_server_editor_screen.dart';
 
 class McpScreen extends ConsumerWidget {
   const McpScreen({super.key});
@@ -200,14 +197,7 @@ class McpScreen extends ConsumerWidget {
 
   Future<void> _testConnection(BuildContext context, WidgetRef ref, McpServer server) async {
     final service = ref.read(mcpServiceProvider);
-    final mcpServer = mcp_model.McpServer(
-      id: server.id,
-      name: server.name,
-      description: null,
-      baseUrl: server.endpoint,
-      type: mcp_model.McpServerType.streamableHttp,
-    );
-    final isConnected = await service.testMcpServerConnection(mcpServer);
+    final isConnected = await service.testMcpServerConnection(server);
     
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -239,102 +229,88 @@ class _McpServerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final description = server.description ?? '';
+    final hasDescription = description.isNotEmpty;
 
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05),
+        ),
+      ),
+      color: isDark ? Tokens.cardDark : Tokens.cardLight,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: (isDark ? Tokens.greenDark20 : Tokens.green10),
-                    ),
-                    alignment: Alignment.center,
-                    child: Icon(
-                      Icons.cloud_done_outlined,
-                      size: 24,
-                      color: (isDark ? Tokens.greenDark100 : Tokens.green100),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          server.name,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '无描述',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Switch(
-                    value: server.isActive,
-                    onChanged: (_) => onToggle(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: isDark ? Tokens.cardDark : Tokens.cardLight,
-                ),
+              // 左侧：服务器信息
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      server.endpoint,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontFamily: 'monospace',
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            server.name,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 18,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
+                    if (hasDescription) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        description,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              
+              // 右侧：开关和类型标签
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  TextButton.icon(
-                    onPressed: onTest,
-                    icon: const Icon(Icons.wifi_tethering_outlined, size: 18),
-                    label: const Text('测试连接'),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    ),
+                  Switch.adaptive(
+                    value: server.isActive,
+                    onChanged: (_) => onToggle(),
+                    activeColor: isDark ? Tokens.greenDark100 : Tokens.green100,
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: onDelete,
-                    icon: const Icon(Icons.delete_outline, size: 18),
-                    tooltip: '删除',
-                    style: IconButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isDark ? Tokens.greenDark10 : Tokens.green10,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isDark ? Tokens.greenDark20 : Tokens.green20,
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Text(
+                      _formatServerType(server.type),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: isDark ? Tokens.greenDark100 : Tokens.green100,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ],
@@ -344,5 +320,14 @@ class _McpServerCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatServerType(McpServerType type) {
+    switch (type) {
+      case McpServerType.streamableHttp:
+        return 'HTTP';
+      case McpServerType.sse:
+        return 'SSE';
+    }
   }
 }

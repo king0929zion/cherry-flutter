@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/message_service.dart';
+
 import '../models/message.dart';
 import '../models/message_block.dart';
+import '../services/message_service.dart';
 
 // 消息服务提供者
 final messageServiceProvider = Provider<MessageService>((ref) {
@@ -27,28 +30,20 @@ final messageProvider = Provider.family<MessageModel?, String>((ref, id) {
 });
 
 // 消息状态通知者
-class MessageNotifier extends FamilyNotifier<AsyncValue<List<MessageModel>>, String> {
+class MessageNotifier extends FamilyAsyncNotifier<List<MessageModel>, String> {
+  late String _topicId;
+
   MessageService get _service => ref.read(messageServiceProvider);
-  String get _topicId => ref.argument;
 
   @override
-  AsyncValue<List<MessageModel>> build(String topicId) {
-    _loadMessages(topicId);
-    return const AsyncValue.loading();
-  }
-
-  Future<void> _loadMessages(String topicId) async {
-    state = const AsyncValue.loading();
-    try {
-      final messages = _service.getMessagesByTopic(topicId);
-      state = AsyncValue.data(messages);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
+  FutureOr<List<MessageModel>> build(String topicId) async {
+    _topicId = topicId;
+    return _service.getMessagesByTopic(topicId);
   }
 
   Future<void> refresh() async {
-    await _loadMessages(_topicId);
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async => _service.getMessagesByTopic(_topicId));
   }
 
   Future<MessageModel> createMessage({
@@ -264,6 +259,6 @@ class MessageNotifier extends FamilyNotifier<AsyncValue<List<MessageModel>>, Str
 }
 
 // 消息通知者提供者
-final messageNotifierProvider = NotifierProvider.family<MessageNotifier, AsyncValue<List<MessageModel>>, String>(() {
-  return MessageNotifier();
-});
+final messageNotifierProvider = AsyncNotifierProvider.family<MessageNotifier, List<MessageModel>, String>(
+  MessageNotifier.new,
+);

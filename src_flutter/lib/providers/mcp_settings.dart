@@ -86,6 +86,11 @@ class McpSettingsNotifier extends Notifier<List<McpServer>> {
     }).toList();
     await save();
   }
+
+  Future<void> updateServer(McpServer server) async {
+    state = state.map((e) => e.id == server.id ? server : e).toList();
+    await save();
+  }
 }
 
 final mcpSettingsProvider = NotifierProvider<McpSettingsNotifier, List<McpServer>>(McpSettingsNotifier.new);

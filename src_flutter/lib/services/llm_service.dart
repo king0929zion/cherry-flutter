@@ -16,7 +16,7 @@ class LlmService {
 
   Future<String> complete({required List<dynamic> context, required ProviderSettings cfg}) async {
     if (cfg.apiKey.isEmpty) {
-      final prompt = context.isEmpty ? '' : context.last.content;
+      final prompt = context.isEmpty ? '' : _extractContent(context.last);
       return prompt.isEmpty ? '（模拟回复）' : '（模拟回复）' + prompt;
     }
 
@@ -24,7 +24,12 @@ class LlmService {
     final req = {
       'model': cfg.model,
       'temperature': cfg.temperature,
-      'messages': context.map((m) => {'role': m.role, 'content': m.content}).toList(),
+      'messages': context
+          .map((m) => {
+                'role': _extractRole(m),
+                'content': _extractContent(m),
+              })
+          .toList(),
     };
     final resp = await http.post(
       uri,
@@ -52,7 +57,7 @@ class LlmService {
     CancelToken? cancelToken,
   }) async {
     if (cfg.apiKey.isEmpty) {
-      final prompt = context.isEmpty ? '...' : context.last.content;
+      final prompt = context.isEmpty ? '...' : _extractContent(context.last);
       final simulated = '（模拟回复）' + prompt;
       for (final chunk in simulated.split(RegExp(r'(?<=。|！|？|,|，|\s)'))) {
         if (cancelToken?.canceled == true) break;
@@ -68,7 +73,12 @@ class LlmService {
       'model': cfg.model,
       'temperature': cfg.temperature,
       'stream': true,
-      'messages': context.map((m) => {'role': m.role, 'content': m.content}).toList(),
+      'messages': context
+          .map((m) => {
+                'role': _extractRole(m),
+                'content': _extractContent(m),
+              })
+          .toList(),
     });
 
     final request = http.Request('POST', uri)
@@ -113,3 +123,40 @@ class LlmService {
 }
 
 final llmServiceProvider = Provider<LlmService>((ref) => const LlmService());
+
+String _extractContent(dynamic message) {
+  if (message is MessageModel) {
+    // 消息正文存储在消息块中，此处使用模型字段或空字符串作为占位
+    return message.model ?? '';
+  }
+  if (message is Map) {
+    final content = message['content'];
+    if (content is String) return content;
+  }
+  try {
+    final dynamic dynamicMessage = message;
+    final value = dynamicMessage.content;
+    if (value is String) return value;
+  } catch (_) {
+    // ignore
+  }
+  return '';
+}
+
+String _extractRole(dynamic message) {
+  if (message is MessageModel) {
+    return message.role;
+  }
+  if (message is Map) {
+    final role = message['role'];
+    if (role is String) return role;
+  }
+  try {
+    final dynamic dynamicMessage = message;
+    final role = dynamicMessage.role;
+    if (role is String) return role;
+  } catch (_) {
+    // ignore
+  }
+  return 'user';
+}

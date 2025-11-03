@@ -54,7 +54,8 @@ class AssistantMarketCard extends StatelessWidget {
                               assistant.emoji ?? '🤖',
                               style: TextStyle(
                                 fontSize: 40,
-                                opacity: emojiOpacity,
+                                color:
+                                    (isDark ? Colors.white : Colors.black).withOpacity(emojiOpacity),
                               ),
                             ),
                           ),

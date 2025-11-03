@@ -10,9 +10,9 @@ import '../../providers/topic_provider.dart';
 import '../../services/block_service.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/message_input.dart';
-import '../../models/block.dart';
 import '../../models/assistant.dart';
 import '../../models/topic.dart';
+import '../../models/message_block.dart';
 import 'widgets/attachment_tile.dart';
 import 'widgets/chat_header.dart';
 
@@ -89,7 +89,8 @@ class ChatScreen extends ConsumerWidget {
                     itemBuilder: (ctx, i) {
                       final m = list[i];
                       final isUser = m.role == 'user';
-                      final contentText = m.model ?? '';
+                      final blocks = ref.watch(messageBlocksProvider(m.id));
+                      final contentText = _composeMessageText(blocks);
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Column(
@@ -98,7 +99,8 @@ class ChatScreen extends ConsumerWidget {
                               content: contentText,
                               isUser: isUser,
                               onCopy: () async {
-                                await Clipboard.setData(ClipboardData(text: m.content));
+                                final textToCopy = _composeMessageText(blocks);
+                                await Clipboard.setData(ClipboardData(text: textToCopy));
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('已复制')),
@@ -247,4 +249,17 @@ class ChatScreen extends ConsumerWidget {
       },
     );
   }
+}
+
+String _composeMessageText(List<MessageBlockModel> blocks) {
+  if (blocks.isEmpty) return '';
+  final buffer = StringBuffer();
+  for (final block in blocks) {
+    final text = block.content;
+    if (text != null && text.trim().isNotEmpty) {
+      if (buffer.isNotEmpty) buffer.writeln();
+      buffer.write(text.trim());
+    }
+  }
+  return buffer.toString();
 }
