@@ -6,10 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/assistant.dart';
-import '../../models/mcp.dart';
 import '../../models/model.dart';
 import '../../providers/assistant_provider.dart';
-import '../../providers/mcp_settings.dart';
+import '../../providers/mcp_settings.dart' show mcpSettingsProvider, McpSettingsNotifier, McpServer;
 import '../../providers/provider_settings.dart';
 import '../../services/model_service.dart';
 import '../../theme/tokens.dart';

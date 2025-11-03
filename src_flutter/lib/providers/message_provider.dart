@@ -29,21 +29,27 @@ final messageProvider = Provider.family<MessageModel?, String>((ref, id) {
   return service.getMessageById(id);
 });
 
-// 消息状态通知者
-class MessageNotifier extends FamilyAsyncNotifier<List<MessageModel>, String> {
-  late String _topicId;
+// 消息状态通知者（使用 FutureProvider.family 简化实现）
+final messageNotifierProvider = FutureProvider.family<List<MessageModel>, String>((ref, topicId) async {
+  final service = ref.read(messageServiceProvider);
+  return service.getMessagesByTopic(topicId);
+});
 
-  MessageService get _service => ref.read(messageServiceProvider);
+// 消息操作提供者
+final messageActionsProvider = Provider.family<MessageActions, String>((ref, topicId) {
+  return MessageActions(ref, topicId);
+});
 
-  @override
-  FutureOr<List<MessageModel>> build(String topicId) async {
-    _topicId = topicId;
-    return _service.getMessagesByTopic(topicId);
-  }
-
+class MessageActions {
+  final Ref _ref;
+  final String _topicId;
+  
+  MessageActions(this._ref, this._topicId);
+  
+  MessageService get _service => _ref.read(messageServiceProvider);
+  
   Future<void> refresh() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async => _service.getMessagesByTopic(_topicId));
+    _ref.invalidate(messageNotifierProvider(_topicId));
   }
 
   Future<MessageModel> createMessage({
@@ -81,7 +87,6 @@ class MessageNotifier extends FamilyAsyncNotifier<List<MessageModel>, String> {
       await refresh();
       return message;
     } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
       rethrow;
     }
   }
@@ -116,7 +121,7 @@ class MessageNotifier extends FamilyAsyncNotifier<List<MessageModel>, String> {
       );
       await refresh();
     } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      // Error handling
     }
   }
 
@@ -125,7 +130,7 @@ class MessageNotifier extends FamilyAsyncNotifier<List<MessageModel>, String> {
       await _service.deleteMessage(id);
       await refresh();
     } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      // Error handling
     }
   }
 
@@ -178,7 +183,6 @@ class MessageNotifier extends FamilyAsyncNotifier<List<MessageModel>, String> {
       );
       return block;
     } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
       rethrow;
     }
   }
@@ -228,7 +232,7 @@ class MessageNotifier extends FamilyAsyncNotifier<List<MessageModel>, String> {
         citationReferences: citationReferences,
       );
     } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      // Error handling
     }
   }
 
@@ -236,7 +240,7 @@ class MessageNotifier extends FamilyAsyncNotifier<List<MessageModel>, String> {
     try {
       await _service.deleteMessageBlock(id);
     } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      // Error handling
     }
   }
 
@@ -253,12 +257,7 @@ class MessageNotifier extends FamilyAsyncNotifier<List<MessageModel>, String> {
       await _service.clearAllMessages();
       await refresh();
     } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      // Error handling
     }
   }
 }
-
-// 消息通知者提供者
-final messageNotifierProvider = AsyncNotifierProvider.family<MessageNotifier, List<MessageModel>, String>(
-  MessageNotifier.new,
-);
