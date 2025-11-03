@@ -8,6 +8,55 @@ import '../../providers/user_settings.dart';
 import '../../theme/tokens.dart';
 import '../../i18n/app_localizations.dart';
 
+/// HeaderBar - 匹配原项目的HeaderBar组件
+class _HeaderBar extends StatelessWidget {
+  final String title;
+
+  const _HeaderBar({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    // 匹配原项目：px-4 items-center h-[44px] justify-between
+    return Container(
+      height: 44, // h-[44px]
+      padding: const EdgeInsets.symmetric(horizontal: 16), // px-4
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween, // justify-between
+        crossAxisAlignment: CrossAxisAlignment.center, // items-center
+        children: [
+          // Left area - min-w-[40px]
+          SizedBox(
+            width: 40,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, size: 24),
+              onPressed: () => Navigator.of(context).pop(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ),
+          // Title - text-[18px] font-bold text-center
+          Expanded(
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontSize: 18, // text-[18px]
+                fontWeight: FontWeight.bold, // font-bold
+                color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+              ),
+            ),
+          ),
+          // Right area - min-w-[40px]
+          const SizedBox(width: 40),
+        ],
+      ),
+    );
+  }
+}
+
 const double _kTileHPadding = 16;
 const double _kTileVPadding = 14;
 const double _kIconGap = 12;
@@ -86,51 +135,41 @@ class SettingsScreen extends ConsumerWidget {
       ),
     ];
 
+    // 匹配原项目：SafeAreaContainer Container gap-6
     return Scaffold(
+      backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
+        child: Column(
+          children: [
+            // HeaderBar - 匹配原项目：px-4 h-[44px]
+            _HeaderBar(title: l10n.settings),
+            // Container - 匹配原项目：flex-1 p-4 gap-5
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16), // p-4
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      l10n.settings,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: groups.length,
+                        itemBuilder: (context, index) {
+                          final group = groups[index];
+                          return Padding(
+                            padding: EdgeInsets.only(top: index == 0 ? 0 : 24), // gap-6 = 24px
+                            child: _SettingGroup(
+                              title: group.title,
+                              items: group.items,
+                              isDark: isDark,
+                            ),
+                          );
+                        },
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      '调整 Cherry Studio 的外观、模型与数据配置',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: isDark
-                            ? Tokens.textSecondaryDark
-                            : Tokens.textSecondaryLight,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
                   ],
                 ),
               ),
-              SliverList.builder(
-                itemCount: groups.length,
-                itemBuilder: (context, index) {
-                  final group = groups[index];
-                  return Padding(
-                    padding: EdgeInsets.only(top: index == 0 ? 0 : 20),
-                    child: _SettingGroup(
-                      title: group.title,
-                      items: group.items,
-                      isDark: isDark,
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -188,40 +227,34 @@ class _SettingGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // 匹配原项目：gap-2
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // GroupTitle - 匹配原项目：font-bold opacity-70 pl-3
         if (title != null)
           Padding(
-            padding: const EdgeInsets.only(left: 6, bottom: 10),
+            padding: const EdgeInsets.only(left: 12, bottom: 8), // pl-3 gap-2
             child: Text(
               title!,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.2,
+                fontWeight: FontWeight.bold,
+                color: (isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight)
+                    .withOpacity(0.7),
               ),
             ),
           ),
+        // Group - 匹配原项目：rounded-xl bg-ui-card-background overflow-hidden
         ClipRRect(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(12), // rounded-xl = 12px
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF161A1F) : Tokens.cardLight,
+              color: isDark ? Tokens.cardDark : Tokens.cardLight, // bg-ui-card-background
               border: Border.all(
                 color: isDark
                     ? Colors.white.withOpacity(0.06)
                     : Colors.black.withOpacity(0.05),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? Colors.black.withOpacity(0.28)
-                      : Colors.black.withOpacity(0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
             ),
             child: Column(
               children: [
@@ -262,38 +295,43 @@ class _SettingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // 匹配原项目：PressableRow py-[14px] px-4 justify-between items-center
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: data.onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12), // rounded-xl
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: _kTileHPadding,
-            vertical: _kTileVPadding,
+            horizontal: 16, // px-4
+            vertical: 14, // py-[14px]
           ),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween, // justify-between
+            crossAxisAlignment: CrossAxisAlignment.center, // items-center
             children: [
-              _LeadingIcon(
-                data: data,
-                isDark: isDark,
-              ),
-              const SizedBox(width: _kIconGap),
-              Expanded(
-                child: Text(
-                  data.title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+              Row(
+                children: [
+                  _LeadingIcon(
+                    data: data,
+                    isDark: isDark,
                   ),
-                ),
+                  const SizedBox(width: _kIconGap), // gap-3 = 12px
+                  Text(
+                    data.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold, // font-bold
+                      color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+                    ),
+                  ),
+                ],
               ),
+              // RowRightArrow - 匹配原项目：ChevronRight size={20} text-text-secondary opacity-90
               Icon(
                 Icons.chevron_right,
                 size: 20,
-                color: isDark
-                    ? Tokens.textSecondaryDark
-                    : Tokens.textSecondaryLight,
+                color: (isDark ? Tokens.textSecondaryDark : Tokens.textSecondaryLight)
+                    .withOpacity(0.9),
               ),
             ],
           ),
