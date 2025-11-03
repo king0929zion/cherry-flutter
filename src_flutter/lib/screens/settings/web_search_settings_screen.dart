@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../providers/web_search_settings.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/header_bar.dart';
 
@@ -12,6 +13,9 @@ class WebSearchSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final settings = ref.watch(webSearchSettingsProvider);
+
+    String currentEngine = _inferEngine(settings.endpoint);
 
     return Scaffold(
       backgroundColor: isDark ? Tokens.bgPrimaryDark : Tokens.bgPrimaryLight,
@@ -37,40 +41,28 @@ class WebSearchSettingsScreen extends ConsumerWidget {
                   _SettingGroup(
                     title: '搜索引擎',
                     children: [
-                      _SettingTile(
-                        icon: Icons.search,
+                      _EngineTile(
                         label: 'Google',
-                        trailing: const Icon(Icons.check, color: Tokens.green100),
-                        onTap: () {},
+                        selected: currentEngine == 'google',
+                        onTap: () => _saveEngine(ref, 'google'),
                       ),
-                      _SettingTile(
-                        icon: Icons.search,
+                      _EngineTile(
                         label: 'Bing',
-                        onTap: () {},
+                        selected: currentEngine == 'bing',
+                        onTap: () => _saveEngine(ref, 'bing'),
                       ),
-                      _SettingTile(
-                        icon: Icons.search,
+                      _EngineTile(
                         label: 'DuckDuckGo',
-                        onTap: () {},
+                        selected: currentEngine == 'ddg',
+                        onTap: () => _saveEngine(ref, 'ddg'),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
                   _SettingGroup(
                     title: '搜索选项',
-                    children: [
-                      _SwitchTile(
-                        icon: Icons.language,
-                        label: '自动搜索',
-                        value: true,
-                        onChanged: (value) {},
-                      ),
-                      _SwitchTile(
-                        icon: Icons.timer,
-                        label: '实时搜索',
-                        value: false,
-                        onChanged: (value) {},
-                      ),
+                    children: const [
+                      // 预留：后续接入更多选项
                     ],
                   ),
                 ],
@@ -80,6 +72,33 @@ class WebSearchSettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _inferEngine(String endpoint) {
+    final e = endpoint.toLowerCase();
+    if (e.contains('duckduckgo')) return 'ddg';
+    if (e.contains('bing.com')) return 'bing';
+    if (e.contains('googleapis.com') || e.contains('customsearch')) return 'google';
+    return 'ddg';
+  }
+
+  Future<void> _saveEngine(WidgetRef ref, String engine) async {
+    late final String endpoint;
+    switch (engine) {
+      case 'google':
+        // 示例：需要配合自定义 proxy 或 API Key 使用
+        endpoint = 'https://www.googleapis.com/customsearch/v1?q={q}';
+        break;
+      case 'bing':
+        endpoint = 'https://api.bing.microsoft.com/v7.0/search?q={q}';
+        break;
+      case 'ddg':
+      default:
+        endpoint = 'https://api.duckduckgo.com/?q={q}&format=json';
+    }
+    await ref.read(webSearchSettingsProvider.notifier).update(
+          ref.read(webSearchSettingsProvider).copyWith(endpoint: endpoint),
+        );
   }
 }
 
@@ -145,24 +164,21 @@ class _SettingGroup extends StatelessWidget {
   }
 }
 
-class _SettingTile extends StatelessWidget {
-  final IconData icon;
+class _EngineTile extends StatelessWidget {
   final String label;
-  final Widget? trailing;
-  final VoidCallback? onTap;
+  final bool selected;
+  final VoidCallback onTap;
 
-  const _SettingTile({
-    required this.icon,
+  const _EngineTile({
     required this.label,
-    this.trailing,
-    this.onTap,
+    required this.selected,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -171,7 +187,7 @@ class _SettingTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(icon, size: 20),
+              Icon(Icons.search, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -182,54 +198,11 @@ class _SettingTile extends StatelessWidget {
                   ),
                 ),
               ),
-              if (trailing != null) trailing!,
+              if (selected)
+                Icon(Icons.check, color: isDark ? Tokens.greenDark100 : Tokens.green100),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SwitchTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _SwitchTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          Icon(icon, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: Tokens.green100,
-          ),
-        ],
       ),
     );
   }
