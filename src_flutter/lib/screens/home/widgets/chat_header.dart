@@ -40,15 +40,15 @@ class ChatHeader extends ConsumerWidget implements PreferredSizeWidget {
           ),
         ),
       ),
-      child: topicAsync.when(
-        data: (topic) {
-          final assistantAsync = ref.watch(assistantProvider(topic.assistantId));
-          return assistantAsync.when(
-            data: (assistant) {
-              if (assistant == null) {
-                return const SizedBox.shrink();
-              }
-              return Row(
+      child: topicAsync == null
+          ? const SizedBox.shrink()
+          : assistantsAsync.when(
+              data: (assistants) {
+                final assistant = ref.watch(assistantProvider(topicAsync.assistantId));
+                if (assistant == null) {
+                  return const SizedBox.shrink();
+                }
+                return Row(
                 children: [
                   // 左侧: 菜单按钮
                   SizedBox(
@@ -71,7 +71,7 @@ class ChatHeader extends ConsumerWidget implements PreferredSizeWidget {
                   Expanded(
                     child: Center(
                       child: _AssistantSelection(
-                        topic: topic,
+                        topic: topicAsync,
                         assistant: assistant,
                         assistantsAsync: assistantsAsync,
                       ),
@@ -85,10 +85,6 @@ class ChatHeader extends ConsumerWidget implements PreferredSizeWidget {
                       icon: const Icon(Icons.add_comment_outlined, size: 24),
                       padding: EdgeInsets.zero,
                       onPressed: () async {
-                        final assistants = assistantsAsync.maybeWhen(
-                          data: (list) => list,
-                          orElse: () => <AssistantModel>[],
-                        );
                         final defaultAssistant = assistants.isNotEmpty 
                           ? assistants.first 
                           : AssistantModel(
@@ -109,15 +105,11 @@ class ChatHeader extends ConsumerWidget implements PreferredSizeWidget {
                     ),
                   ),
                 ],
-              );
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          );
-        },
-        loading: () => const SizedBox.shrink(),
-        error: (_, __) => const SizedBox.shrink(),
-      ),
+                );
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
     );
   }
 }

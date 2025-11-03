@@ -271,4 +271,36 @@ class MessageService {
     final blockBox = HiveBoxes.getMessageBlocksBox();
     await blockBox.clear();
   }
+
+  // 翻译消息
+  Future<void> translateMessage({
+    required String messageId,
+    required String lang,
+    required dynamic ref,
+  }) async {
+    // TODO: 实现翻译逻辑
+    // 这是一个占位实现，实际应该调用翻译API
+  }
+
+  // 重新生成助手消息
+  Future<void> regenerateAssistant({
+    required String assistantMessageId,
+    required String topicId,
+    required dynamic ref,
+  }) async {
+    // TODO: 实现重新生成逻辑
+    // 这是一个占位实现，实际应该调用LLM API重新生成
+  }
+
+  // 使用LLM发送消息
+  Future<void> sendWithLlm({
+    required String topicId,
+    required String text,
+    required dynamic ref,
+    List<dynamic>? attachments,
+    List<dynamic>? mentions,
+  }) async {
+    // TODO: 实现发送消息逻辑
+    // 这是一个占位实现，实际应该调用LLM API发送消息
+  }
 }

@@ -33,11 +33,13 @@ final assistantProvider = Provider.family<AssistantModel?, String>((ref, id) {
 });
 
 // 助手状态通知者
-class AssistantNotifier extends StateNotifier<AsyncValue<List<AssistantModel>>> {
-  final AssistantService _service;
+class AssistantNotifier extends Notifier<AsyncValue<List<AssistantModel>>> {
+  AssistantService get _service => ref.read(assistantServiceProvider);
 
-  AssistantNotifier(this._service) : super(const AsyncValue.loading()) {
+  @override
+  AsyncValue<List<AssistantModel>> build() {
     _loadAssistants();
+    return const AsyncValue.loading();
   }
 
   Future<void> _loadAssistants() async {
@@ -160,7 +162,6 @@ class AssistantNotifier extends StateNotifier<AsyncValue<List<AssistantModel>>> 
 }
 
 // 助手通知者提供者
-final assistantNotifierProvider = StateNotifierProvider<AssistantNotifier, AsyncValue<List<AssistantModel>>>((ref) {
-  final service = ref.watch(assistantServiceProvider);
-  return AssistantNotifier(service);
+final assistantNotifierProvider = NotifierProvider<AssistantNotifier, AsyncValue<List<AssistantModel>>>(() {
+  return AssistantNotifier();
 });

@@ -346,4 +346,4 @@ class _McpServerCard extends StatelessWidget {
       ),
     );
   }
-
+}

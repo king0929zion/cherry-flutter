@@ -25,11 +25,13 @@ final topicProvider = Provider.family<TopicModel?, String>((ref, id) {
 });
 
 // 话题状态通知者
-class TopicNotifier extends StateNotifier<AsyncValue<List<TopicModel>>> {
-  final TopicService _service;
+class TopicNotifier extends Notifier<AsyncValue<List<TopicModel>>> {
+  TopicService get _service => ref.read(topicServiceProvider);
 
-  TopicNotifier(this._service) : super(const AsyncValue.loading()) {
+  @override
+  AsyncValue<List<TopicModel>> build() {
     _loadTopics();
+    return const AsyncValue.loading();
   }
 
   Future<void> _loadTopics() async {
@@ -142,7 +144,6 @@ class TopicNotifier extends StateNotifier<AsyncValue<List<TopicModel>>> {
 }
 
 // 话题通知者提供者
-final topicNotifierProvider = StateNotifierProvider<TopicNotifier, AsyncValue<List<TopicModel>>>((ref) {
-  final service = ref.watch(topicServiceProvider);
-  return TopicNotifier(service);
+final topicNotifierProvider = NotifierProvider<TopicNotifier, AsyncValue<List<TopicModel>>>(() {
+  return TopicNotifier();
 });

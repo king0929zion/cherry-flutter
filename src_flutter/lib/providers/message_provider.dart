@@ -27,18 +27,20 @@ final messageProvider = Provider.family<MessageModel?, String>((ref, id) {
 });
 
 // 消息状态通知者
-class MessageNotifier extends StateNotifier<AsyncValue<List<MessageModel>>> {
-  final MessageService _service;
-  final String _topicId;
+class MessageNotifier extends FamilyNotifier<AsyncValue<List<MessageModel>>, String> {
+  MessageService get _service => ref.read(messageServiceProvider);
+  String get _topicId => ref.argument;
 
-  MessageNotifier(this._service, this._topicId) : super(const AsyncValue.loading()) {
-    _loadMessages();
+  @override
+  AsyncValue<List<MessageModel>> build(String topicId) {
+    _loadMessages(topicId);
+    return const AsyncValue.loading();
   }
 
-  Future<void> _loadMessages() async {
+  Future<void> _loadMessages(String topicId) async {
     state = const AsyncValue.loading();
     try {
-      final messages = _service.getMessagesByTopic(_topicId);
+      final messages = _service.getMessagesByTopic(topicId);
       state = AsyncValue.data(messages);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -46,7 +48,7 @@ class MessageNotifier extends StateNotifier<AsyncValue<List<MessageModel>>> {
   }
 
   Future<void> refresh() async {
-    await _loadMessages();
+    await _loadMessages(_topicId);
   }
 
   Future<MessageModel> createMessage({
@@ -262,7 +264,6 @@ class MessageNotifier extends StateNotifier<AsyncValue<List<MessageModel>>> {
 }
 
 // 消息通知者提供者
-final messageNotifierProvider = StateNotifierProvider.family<MessageNotifier, AsyncValue<List<MessageModel>>, String>((ref, topicId) {
-  final service = ref.watch(messageServiceProvider);
-  return MessageNotifier(service, topicId);
+final messageNotifierProvider = NotifierProvider.family<MessageNotifier, AsyncValue<List<MessageModel>>, String>(() {
+  return MessageNotifier();
 });
