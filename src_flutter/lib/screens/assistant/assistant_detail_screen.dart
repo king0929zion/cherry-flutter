@@ -773,16 +773,22 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen>
                 ]
               : selected
                   .map(
-                    (server) => Chip(
-                      label: Text(server.name),
-                      backgroundColor: isDark ? Tokens.greenDark10 : Tokens.green10,
-                      labelStyle: theme.textTheme.bodySmall?.copyWith(
-                        color: isDark ? Tokens.greenDark100 : Tokens.green100,
-                        fontWeight: FontWeight.w600,
+                    (server) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isDark ? Tokens.greenDark10 : Tokens.green10,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? Tokens.greenDark20 : Tokens.green20,
+                          width: 0.6,
+                        ),
                       ),
-                      side: BorderSide(
-                        color: isDark ? Tokens.greenDark20 : Tokens.green20,
-                        width: 0.6,
+                      child: Text(
+                        server.name,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isDark ? Tokens.greenDark100 : Tokens.green100,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   )
@@ -790,15 +796,28 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen>
         ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+            side: BorderSide(
+              color: isDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.08),
+            ),
+          ),
           onPressed: () async {
             final selected = await _showMcpServerSelector(context, servers, _selectedMcpServerIds);
             if (selected != null) {
               _updateAssistant(mcpServerIds: selected);
             }
           },
-          icon: const Icon(Icons.link_outlined, size: 18),
+          icon: Icon(
+            Icons.link_outlined,
+            size: 18,
+            color: isDark ? Tokens.greenDark100 : Tokens.green100,
+          ),
           label: Text(
             _selectedMcpServerIds.isEmpty ? '绑定服务器' : '编辑绑定',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: isDark ? Tokens.textPrimaryDark : Tokens.textPrimaryLight,
+            ),
           ),
         ),
       ],
@@ -935,6 +954,7 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen>
                         final model = models[index];
                         final isSelected = model.id == selectedId;
                         return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                           title: Text(model.name),
                           subtitle: model.description != null
                               ? Text(
@@ -944,7 +964,10 @@ class _AssistantDetailScreenState extends ConsumerState<AssistantDetailScreen>
                                 )
                               : null,
                           trailing: isSelected
-                              ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
+                              ? Icon(
+                                  Icons.check_circle,
+                                  color: isDark ? Tokens.greenDark100 : Tokens.green100,
+                                )
                               : null,
                           onTap: () => Navigator.pop(ctx, model),
                         );
